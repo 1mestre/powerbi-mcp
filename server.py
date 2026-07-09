@@ -115,7 +115,10 @@ def add_measure_to_tmdl(tmdl_path: str, name: str, expression: str, format_strin
             
         measure_def = f"\n{indent}measure '{name}' = {expression}"
         if format_string:
-            measure_def += f"\n{indent}{indent}formatString: {format_string}"
+            clean_format = format_string.strip()
+            if not (clean_format.startswith('"') and clean_format.endswith('"')) and not (clean_format.startswith("'") and clean_format.endswith("'")):
+                clean_format = f'"{clean_format}"'
+            measure_def += f"\n{indent}{indent}formatString: {clean_format}"
         measure_def += "\n"
         
         partition_str = f"\n{indent}partition "
