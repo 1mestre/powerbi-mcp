@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+dashboard.html
+test_columns.py
+query_sales.py
