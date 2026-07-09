@@ -81,5 +81,61 @@ def execute_dax(port: str, query: str) -> list[dict]:
         
     return clean_results
 
+@mcp.tool()
+def add_measure_to_tmdl(tmdl_path: str, name: str, expression: str, format_string: str = None) -> str:
+    """Adds a DAX measure directly to a TMDL semantic model table file on disk.
+    This ensures the measure is permanently saved in the Power BI Project (.pbip)
+    and won't be lost when Power BI Desktop closes.
+
+    Args:
+        tmdl_path (str): Absolute path to the .tmdl file of the table (e.g. path/to/table.tmdl).
+        name (str): The name of the new measure (e.g. "Total Sales").
+        expression (str): The DAX formula (e.g. "SUM('Sales'[Amount])").
+        format_string (str, optional): Format string for the measure (e.g. "$#,##0").
+
+    Returns:
+        str: Success or error message.
+    """
+    import os
+    if not os.path.exists(tmdl_path):
+        return f"Error: TMDL file not found at {tmdl_path}"
+        
+    try:
+        with open(tmdl_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # Standardize check for duplicate measure name
+        if f"measure '{name}'" in content or f"measure {name}" in content:
+            return f"Error: Measure '{name}' already exists in this TMDL file."
+            
+        # Detect indentation (tabs vs spaces)
+        indent = "\t"
+        if "\n  column" in content:
+            indent = "  "
+            
+        measure_def = f"\n{indent}measure '{name}' = {expression}"
+        if format_string:
+            measure_def += f"\n{indent}{indent}formatString: {format_string}"
+        measure_def += "\n"
+        
+        partition_str = f"\n{indent}partition "
+        if partition_str in content:
+            parts = content.split(partition_str, 1)
+            new_content = parts[0] + measure_def + partition_str + parts[1]
+        else:
+            annotation_str = f"\n{indent}annotation "
+            if annotation_str in content:
+                parts = content.split(annotation_str, 1)
+                new_content = parts[0] + measure_def + annotation_str + parts[1]
+            else:
+                new_content = content.rstrip() + "\n" + measure_def
+                
+        with open(tmdl_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+            
+        return f"Successfully added measure '{name}' to {os.path.basename(tmdl_path)}"
+    except Exception as e:
+        return f"Error modifying TMDL file: {e}"
+
 if __name__ == "__main__":
     mcp.run()

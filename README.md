@@ -96,3 +96,7 @@ The server exposes the following tools:
 3. **`execute_dax`**
    - *Parameters:* `port` (string), `query` (string)
    - *Description:* Executes a custom DAX query (e.g., `EVALUATE 'Table'`) and returns rows formatted as JSON.
+
+4. **`add_measure_to_tmdl`**
+   - *Parameters:* `tmdl_path` (string), `name` (string), `expression` (string), `format_string` (string, optional)
+   - *Description:* Appends a DAX measure directly to a local table's `.tmdl` file on disk. This guarantees the measure is permanently saved in the Power BI Project (PBIP) metadata instead of only living in the temporary active memory session.
