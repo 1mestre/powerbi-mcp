@@ -99,4 +99,32 @@ The server exposes the following tools:
 
 4. **`add_measure_to_tmdl`**
    - *Parameters:* `tmdl_path` (string), `name` (string), `expression` (string), `format_string` (string, optional)
-   - *Description:* Appends a DAX measure directly to a local table's `.tmdl` file on disk. This guarantees the measure is permanently saved in the Power BI Project (PBIP) metadata instead of only living in the temporary active memory session.
+   - *Description:* Appends a DAX measure directly to a local table's `.tmdl` file on disk. This guarantees the measure is permanently saved in the Power BI Project (PBIP) metadata instead of only living in the temporary active memory session. It automatically handles double-quoting the format string to prevent syntax errors.
+
+---
+
+## Best Practices & Troubleshooting (PBIP / TMDL / PBIR)
+
+During manual or agent-based programmatic editing of Power BI Projects, follow these strict development rules to avoid report corruption and application load crashes:
+
+### 1. TMDL formatString Quoting Rules
+In Tabular Model Definition Language (TMDL) files, any `formatString` property containing special characters, symbols, operators, or spacing (such as `$`, `%`, `;`, `+`, or spaces) **must be enclosed in double quotes**. 
+* **Incorrect:** `formatString: $#,##0` (causes Power BI Desktop crash on load)
+* **Correct:** `formatString: "$#,##0"` or `formatString: "+0.0%;-0.0%"`
+* *Note:* The `add_measure_to_tmdl` tool handles this automatically.
+
+### 2. Guarding Against Duplicate Measures
+Before appending DAX measures to a `.tmdl` file, verify if the measure is already defined (e.g. at the beginning of the file from a prior `.pbix` export). Defining a measure twice will trigger a fatal TMDL compilation error: `"No se pueden combinar objetos TMDL porque ambos declaran la misma propiedad: expression"`.
+
+### 3. Git Integration and Root Path Permission Error
+Power BI Desktop automatically detects Git repositories up the directory tree to configure its project settings. If a `.git` folder accidentally exists in the root drive (e.g., `C:\.git`), Power BI will attempt to write a `.gitignore` file at `C:\.gitignore`. Because non-admin users cannot write to the root of `C:\`, saving the project will crash with: `Acceso denegado a la ruta de acceso 'C:\.gitignore'`. 
+* **Fix:** Delete the accidental root-level `C:\.git` folder.
+
+### 4. Valid PBIR visualType Identifiers
+When injecting custom visual layouts inside `.Report\definition\pages\[page]\visuals\[visual]\visual.json`, only use official Power BI built-in `visualType` names. Using invalid names causes the entire report to fail to load on startup:
+* **Invalid:** `columnClusteredChart`, `columnStackedChart`
+* **Valid standard chart types:**
+  - `"columnChart"` (handles both clustered column and stacked column layouts)
+  - `"barChart"` (handles both clustered bar and stacked bar layouts)
+  - `"lineChart"`, `"pieChart"`, `"donutChart"`, `"treemap"`, `"card"`, `"matrix"`, `"table"`, `"waterfallChart"`, `"areaChart"`, `"scatterChart"`
+
