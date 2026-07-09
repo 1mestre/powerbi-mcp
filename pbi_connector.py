@@ -1,33 +1,53 @@
 import os
 import glob
 import sys
-from typing import List, Dict, Any
+import logging
+from typing import List, Dict, Any, Optional
 
-# Cargar pythonnet para utilizar el DLL oficial de Microsoft ADOMD Client
-import clr
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("PowerBIConnector")
 
-# Buscar el DLL de AdomdClient instalado por Power BI Desktop
-dll_path = r"C:\Program Files\Microsoft Power BI Desktop\bin\Microsoft.PowerBI.AdomdClient.dll"
-if not os.path.exists(dll_path):
-    # Fallback si no está en la ruta estándar (por ejemplo, versión de la Tienda de Microsoft)
+# Load pythonnet to interface with Microsoft ADOMD Client DLL
+try:
+    import clr
+except ImportError:
+    logger.error("pythonnet is not installed. Please install it using 'pip install pythonnet'.")
+    raise
+
+# Search for the AdomdClient DLL installed by Power BI Desktop
+def _locate_adomd_dll() -> str:
+    standard_path = r"C:\Program Files\Microsoft Power BI Desktop\bin\Microsoft.PowerBI.AdomdClient.dll"
+    if os.path.exists(standard_path):
+        return standard_path
+        
+    # Store version fallback
     store_glob = r"C:\Program Files\WindowsApps\Microsoft.MicrosoftPowerBIDesktop*\bin\Microsoft.PowerBI.AdomdClient.dll"
     matches = glob.glob(store_glob)
     if matches:
-        dll_path = matches[0]
+        return matches[0]
+        
+    raise FileNotFoundError(
+        "Microsoft.PowerBI.AdomdClient.dll not found in standard paths. "
+        "Please ensure Microsoft Power BI Desktop is installed."
+    )
 
-if os.path.exists(dll_path):
+try:
+    dll_path = _locate_adomd_dll()
     sys.path.append(os.path.dirname(dll_path))
     clr.AddReference("Microsoft.PowerBI.AdomdClient")
-else:
-    raise FileNotFoundError("No se encontró el archivo DLL Microsoft.PowerBI.AdomdClient.dll. Asegúrate de tener Power BI Desktop instalado.")
+except Exception as e:
+    logger.error(f"Failed to load ADOMD reference: {e}")
+    raise
 
 from Microsoft.AnalysisServices.AdomdClient import AdomdConnection, AdomdDataAdapter
 from System.Data import DataSet
 
 def get_active_pbi_instances() -> List[Dict[str, str]]:
-    """
-    Busca en AppData los puertos de las instancias activas de Power BI Desktop.
-    Devuelve una lista de diccionarios con 'path' y 'port'.
+    """Scans local AppData workspaces to detect active Power BI Desktop instances and their local ports.
+
+    Returns:
+        List[Dict[str, str]]: List of dicts containing the workspace path and the local Analysis Services port.
     """
     base_paths = [
         os.path.expanduser(r"~\AppData\Local\Microsoft\Power BI Desktop\AnalysisServicesWorkspaces"),
@@ -46,39 +66,60 @@ def get_active_pbi_instances() -> List[Dict[str, str]]:
                     try:
                         with open(port_file, 'rb') as f:
                             port_bytes = f.read()
+                            # Handle UTF-16 LE encoding typically used by Windows
                             try:
                                 port = port_bytes.decode('utf-16').strip()
-                            except Exception:
+                            except UnicodeDecodeError:
                                 port = port_bytes.decode('utf-8', errors='ignore').strip()
+                            
+                            # Clean port string to contain digits only
                             port = ''.join(c for c in port if c.isdigit())
-                            found_ports.append({
-                                "path": data_path,
-                                "port": port
-                            })
-                    except Exception:
-                        pass
-    
+                            if port:
+                                found_ports.append({
+                                    "path": data_path,
+                                    "port": port
+                                })
+                    except Exception as e:
+                        logger.warning(f"Error reading port file at {port_file}: {e}")
+                        
     return found_ports
 
 class PowerBIConnector:
+    """Manages connections and queries to a local Power BI Desktop Analysis Services instance."""
+
     def __init__(self, port: str):
         self.port = port
         self.connection_string = f"Provider=MSOLAP;Data Source=localhost:{self.port};"
-        self.conn = None
+        self.conn: Optional[AdomdConnection] = None
 
-    def connect(self):
+    def connect(self) -> None:
+        """Establishes connection to the local Analysis Services instance."""
         if not self.conn:
-            self.conn = AdomdConnection(self.connection_string)
-            self.conn.Open()
+            try:
+                self.conn = AdomdConnection(self.connection_string)
+                self.conn.Open()
+            except Exception as e:
+                logger.error(f"Failed to connect to local port {self.port}: {e}")
+                raise
 
-    def disconnect(self):
+    def disconnect(self) -> None:
+        """Closes the connection to the Analysis Services instance."""
         if self.conn:
-            self.conn.Close()
-            self.conn = None
+            try:
+                self.conn.Close()
+            except Exception as e:
+                logger.warning(f"Error closing connection: {e}")
+            finally:
+                self.conn = None
 
     def execute_query(self, dax_query: str) -> List[Dict[str, Any]]:
-        """
-        Ejecuta un query DAX o DMV usando ADOMD y devuelve el resultado como una lista de diccionarios.
+        """Executes a DAX or DMV query against the active model.
+
+        Args:
+            dax_query (str): The query string.
+
+        Returns:
+            List[Dict[str, Any]]: List of dictionary rows matching the query results.
         """
         self.connect()
         try:
@@ -99,11 +140,11 @@ class PowerBIConnector:
                 row_dict = {}
                 for col in columns:
                     val = row[col]
-                    # Convertir DBNull a None de Python
+                    # Handle DBNull values from .NET
                     if val.__class__.__name__ == 'DBNull':
                         row_dict[col] = None
                     else:
-                        # Convertir tipos .NET comunes si es necesario a tipos estándar de Python
+                        # Convert common .NET numeric types to Python native types
                         if type(val).__name__ == 'Decimal':
                             row_dict[col] = float(val)
                         else:
@@ -111,12 +152,17 @@ class PowerBIConnector:
                 results.append(row_dict)
                 
             return results
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
+            raise
         finally:
             self.disconnect()
 
     def get_model_schema(self) -> List[Dict[str, Any]]:
-        """
-        Obtiene las tablas y columnas del modelo de datos usando DMVs.
+        """Retrieves semantic model schema including tables and their columns.
+
+        Returns:
+            List[Dict[str, Any]]: List of tables with their columns and data types.
         """
         try:
             tables_data = self.execute_query("SELECT * FROM $SYSTEM.TMSCHEMA_TABLES")
@@ -140,7 +186,16 @@ class PowerBIConnector:
                     if not name or name.startswith("RowNumber"):
                         continue
                         
-                    dtype_map = {2: "String", 6: "Int64", 8: "Double", 9: "DateTime", 10: "Currency", 11: "Boolean"}
+                    # Map standard TMSCHEMA data types
+                    # 2: String, 6: Int64, 8: Double, 9: DateTime, 10: Currency, 11: Boolean
+                    dtype_map = {
+                        2: "String", 
+                        6: "Int64", 
+                        8: "Double", 
+                        9: "DateTime", 
+                        10: "Currency", 
+                        11: "Boolean"
+                    }
                     dtype_id = col.get("DataType", 2)
                     
                     schema[table_id]["Columns"].append({
@@ -151,4 +206,5 @@ class PowerBIConnector:
                     
             return list(schema.values())
         except Exception as e:
-            return [{"error": str(e), "message": "Fallo al consultar TMSCHEMA mediante ADOMD."}]
+            logger.error(f"Failed to retrieve model schema: {e}")
+            return [{"error": str(e), "message": "Failed to query schema via ADOMD Client."}]

@@ -5,12 +5,21 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import webbrowser
 import os
+import sys
 
 def main():
-    port = "60393"
+    # Detect running instances
+    instances = pbi_connector.get_active_pbi_instances()
+    if not instances:
+        print("Error: No active Power BI Desktop instances found.")
+        sys.exit(1)
+        
+    # Use the first active instance detected
+    port = instances[0]['port']
+    print(f"Connecting to Power BI Desktop instance on port: {port}")
     connector = pbi_connector.PowerBIConnector(port)
     
-    # Consulta DAX agrupada por País y Marca
+    # DAX query grouped by Country and Brand
     dax_query = """
     EVALUATE SUMMARIZECOLUMNS(
         'Base_Datos_Consolidada'[Country],
@@ -21,20 +30,20 @@ def main():
     )
     """
     
-    print("Ejecutando consulta DAX contra la instancia de Power BI local...")
+    print("Executing DAX query against local Analysis Services engine...")
     try:
         data = connector.execute_query(dax_query)
     except Exception as e:
-        print(f"Error al ejecutar la consulta DAX: {e}")
-        return
+        print(f"Error executing DAX query: {e}")
+        sys.exit(1)
     
     if not data:
-        print("No se obtuvieron datos de la consulta.")
+        print("No data returned from the query.")
         return
         
     df = pd.DataFrame(data)
     
-    # Limpiar y renombrar las columnas que vienen del modelo tabular
+    # Normalize column names returned from the tabular model
     rename_map = {}
     for col in df.columns:
         if "Country" in col:
@@ -50,21 +59,21 @@ def main():
             
     df = df.rename(columns=rename_map)
     
-    # Convertir columnas numéricas de forma segura
+    # Safely convert column types to numeric
     df['NetSales'] = pd.to_numeric(df['NetSales'], errors='coerce').fillna(0)
     df['Costs'] = pd.to_numeric(df['Costs'], errors='coerce').fillna(0)
     df['Margin'] = pd.to_numeric(df['Margin'], errors='coerce').fillna(0)
     
-    print(f"Cargados {len(df)} registros agregados.")
+    print(f"Successfully loaded {len(df)} aggregated records.")
     
-    # --- CONSTRUCCIÓN DEL DASHBOARD INTERACTIVO ---
+    # --- BUILD INTERACTIVE DASHBOARD WITH PLOTLY ---
     fig = make_subplots(
         rows=2, cols=1,
-        subplot_titles=("Ventas Netas y Costos por País (USD)", "Top 10 Marcas por Margen Bruto (USD)"),
+        subplot_titles=("Net Sales & Costs by Country (USD)", "Top 10 Brands by Gross Margin (USD)"),
         vertical_spacing=0.15
     )
     
-    # 1. Ventas Netas y Costos por País
+    # 1. Net Sales & Costs by Country
     df_country = df.groupby('Country')[['NetSales', 'Costs']].sum().reset_index()
     df_country = df_country.sort_values(by='NetSales', ascending=False)
     
@@ -72,9 +81,9 @@ def main():
         go.Bar(
             x=df_country['Country'],
             y=df_country['NetSales'],
-            name='Ventas Netas',
-            marker_color='#10b981', # Verde esmeralda
-            hovertemplate='País: %{x}<br>Ventas: $%{y:,.2f}<extra></extra>'
+            name='Net Sales',
+            marker_color='#10b981', # Emerald green
+            hovertemplate='Country: %{x}<br>Sales: $%{y:,.2f}<extra></extra>'
         ),
         row=1, col=1
     )
@@ -83,14 +92,14 @@ def main():
         go.Bar(
             x=df_country['Country'],
             y=df_country['Costs'],
-            name='Costos',
-            marker_color='#f43f5e', # Rosa/Rojo
-            hovertemplate='País: %{x}<br>Costos: $%{y:,.2f}<extra></extra>'
+            name='Costs',
+            marker_color='#f43f5e', # Rose/Red
+            hovertemplate='Country: %{x}<br>Costs: $%{y:,.2f}<extra></extra>'
         ),
         row=1, col=1
     )
     
-    # 2. Margen Bruto por Marca (Top 10)
+    # 2. Gross Margin by Brand (Top 10)
     df_brand = df.groupby('Brand')['Margin'].sum().reset_index()
     df_brand = df_brand.sort_values(by='Margin', ascending=False).head(10)
     
@@ -98,17 +107,17 @@ def main():
         go.Bar(
             x=df_brand['Brand'],
             y=df_brand['Margin'],
-            name='Margen Bruto',
-            marker_color='#3b82f6', # Azul premium
-            hovertemplate='Marca: %{x}<br>Margen: $%{y:,.2f}<extra></extra>'
+            name='Gross Margin',
+            marker_color='#3b82f6', # Premium Blue
+            hovertemplate='Brand: %{x}<br>Margin: $%{y:,.2f}<extra></extra>'
         ),
         row=2, col=1
     )
     
-    # Diseño Premium
+    # Premium Layout Configuration
     fig.update_layout(
         title={
-            'text': "Análisis de Datos de Power BI Desktop",
+            'text': "Power BI Local Data Analysis Dashboard",
             'y':0.96,
             'x':0.5,
             'xanchor': 'center',
@@ -116,8 +125,8 @@ def main():
             'font': {'size': 24, 'color': '#f8fafc', 'family': 'Segoe UI, Helvetica, sans-serif'}
         },
         template='plotly_dark',
-        paper_bgcolor='#0f172a', # Fondo general Slate-900
-        plot_bgcolor='#1e293b',  # Fondo del gráfico Slate-800
+        paper_bgcolor='#0f172a', # Slate-900 general background
+        plot_bgcolor='#1e293b',  # Slate-800 chart background
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -133,16 +142,16 @@ def main():
         )
     )
     
-    # Ajustar estilos de los subplots
+    # Adjust axes styling
     fig.update_xaxes(showgrid=False, tickfont=dict(color='#cbd5e1'))
     fig.update_yaxes(showgrid=True, gridcolor='#334155', tickfont=dict(color='#cbd5e1'))
     
     output_html = "dashboard.html"
     fig.write_html(output_html)
     abs_path = os.path.abspath(output_html)
-    print(f"¡Hecho! El dashboard interactivo se guardó en: {abs_path}")
+    print(f"Success! Interactive dashboard saved to: {abs_path}")
     
-    # Abrir en el navegador por defecto
+    # Open dashboard in default browser
     webbrowser.open(f"file:///{abs_path}")
 
 if __name__ == "__main__":
