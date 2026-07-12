@@ -150,6 +150,21 @@ When appending or modifying measures in a local `.tmdl` file:
 
 ---
 
-## 6. Environment & Storage Warnings
+## 6. Environment, Schema & Workflow Rules (CRÍTICO)
+
 * **Root Git Repositories:** Ensure no `.git` folder exists in `C:\` or `D:\` roots. This causes Power BI's automatic Git integration to try to write a `.gitignore` to the root drive, triggering an access permission crash.
-* **Close Power BI Before Edits:** Always kill Power BI Desktop (`taskkill /IM PBIDesktop.exe /F`) before editing PBIR JSON or TMDL files, as it caches files in memory and will overwrite your changes on save or close.
+* **Close Power BI Before Edits (FLUJO DE TRABAJO CRÍTICO):** You **MUST** run `taskkill /IM PBIDesktop.exe /F` **BEFORE** making any changes to `.Report` or `.SemanticModel` files. If Power BI Desktop is open, it holds the files in memory and will completely overwrite the directory on save or close, wiping out your generated pages and visuals.
+* **Valid JSON Keys (No "size", no "config" on root):** In modern `visualContainer` files, never write a `"size"`, `"config"`, or `"filters"` property on the root object of `visual.json`. Width and height must reside strictly inside `"position"`:
+  ```json
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 0,
+    "width": 600,
+    "height": 400,
+    "tabOrder": 0
+  }
+  ```
+* **Mandatory Projection Keys:** Every field projection inside the `"projections": [...]` array must contain `"queryRef"` and `"nativeQueryRef"` as string values. Failing to include these strings will cause a report load crash.
+* **Page Folder Names:** Page folders under `pages/` must be named using 20-character lowercase hexadecimal strings (e.g. `3fc9a277713051a16381` or GUIDs). Do not use descriptive names like `page_resumen`.
+
