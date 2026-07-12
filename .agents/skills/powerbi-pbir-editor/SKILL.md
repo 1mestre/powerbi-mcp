@@ -9,6 +9,47 @@ Use this skill when you need to programmatically add or modify visuals in a Powe
 
 ---
 
+## ⚠️ REGLAS DE ORO PARA EVITAR GRÁFICOS VACÍOS EN PBIR 2.0.0+
+
+1. **Estructura de Carpetas:** Los visuales deben guardarse en carpetas individuales bajo la subcarpeta `visuals/`. Ejemplo: `pages/{page-guid}/visuals/{visual-guid}/visual.json`. No sueltos en la carpeta de la página.
+2. **Formato JSON Correcto:** No pongas `projections`, `filters` o `query` en la raíz de `visual.json` ni directamente bajo `visual`. Las proyecciones deben ir obligatoriamente en `visual.query.queryState`:
+   ```json
+   "visual": {
+     "visualType": "treemap",
+     "query": {
+       "queryState": {
+         "Category": { "projections": [ ... ] },
+         "Y": { "projections": [ ... ] }
+       }
+     },
+     "drillFilterOtherVisuals": true,
+     "objects": {},
+     "visualContainerObjects": {}
+   }
+   ```
+3. **Column vs Measure (CRÍTICO):** Los gráficos agrupados (como `treemap`, `funnel`, `barChart`, `columnChart`, `pieChart`, `donutChart`, etc.) **NO aceptan columnas directas (`"Column"`) en su proyección de valores (`Y` o `Values`)**. Si intentas usar una columna directamente en el eje Y, el gráfico se renderizará como un **rectángulo vacío** en Power BI Desktop.
+   - **Solución:** Primero debes crear una medida DAX (`measure`) en el archivo `.tmdl` correspondiente (usando la herramienta `add_measure_to_tmdl`), por ejemplo: `measure 'Promedio Servicio' = AVERAGE(tabla[servicio])`.
+   - **Referencia:** En el JSON del visual, debes apuntar a esa medida usando la proyección de tipo `"Measure"` (no `"Column"`):
+     ```json
+     "Y": {
+       "projections": [
+         {
+           "field": {
+             "Measure": {
+               "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
+               "Property": "Promedio Servicio"
+             }
+           },
+           "queryRef": "comidasrapidas.Promedio Servicio",
+           "nativeQueryRef": "Promedio Servicio"
+         }
+       ]
+     }
+     ```
+   - Las proyecciones de tipo `"Column"` directo sólo se permiten en tablas (`tableEx`) o en el campo `Category`/`Group` de los gráficos.
+
+---
+
 ## 1. Valid PBIR visualType Identifiers
 Never use legacy, descriptive, or regional names (e.g., `columnStackedChart` or `clusteredBarChart`). Only use the official Power BI built-in identifiers:
 
@@ -53,48 +94,7 @@ In modern PBIR reports, visual files **must not** be placed directly in the page
 ---
 
 ## 3. Projection Bindings by Chart Type (visualContainer Schema)
-Map fields inside `visuals/{visual-name}/visual.json` under `visual.query.queryState` using the following exact format and channel keys:
-
-* **Category**: X-axis/y-axis dimension.
-* **Y**: Metric value/measure.
-* **Values**: For flat tables (`tableEx`) or multi-row cards.
-
-### ⚠️ Aggregation Rule (CRITICAL)
-In the modern `visualContainer` schema:
-1. Chart visuals (treemap, funnel, barChart, columnChart, etc.) **cannot** aggregate columns directly in the visual JSON. If you put a `"Column"` projection on the Y-axis/Values of a chart, it will render as an **empty rectangle**.
-2. **You must first define a DAX measure in the table's TMDL file** (e.g. `measure 'Total Sales' = SUM('Sales'[Amount])` or `measure 'Promedio Edad' = AVERAGE('comidasrapidas'[edad])`).
-3. Reference that measure in `visual.json` using the `"Measure"` projection type:
-
-```json
-"Category": {
-  "projections": [
-    {
-      "field": {
-        "Column": {
-          "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
-          "Property": "genero"
-        }
-      },
-      "queryRef": "comidasrapidas.genero",
-      "nativeQueryRef": "genero"
-    }
-  ]
-},
-"Y": {
-  "projections": [
-    {
-      "field": {
-        "Measure": {
-          "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
-          "Property": "Promedio Edad"
-        }
-      },
-      "queryRef": "comidasrapidas.Promedio Edad",
-      "nativeQueryRef": "Promedio Edad"
-    }
-  ]
-}
-```
+Map fields inside `visuals/{visual-name}/visual.json` under `visual.query.queryState` using the format described in the Golden Rules above.
 
 ### Table Visuals (tableEx)
 Flat tables (`tableEx`) can use direct `"Column"` references without aggregations inside `"Values"`:
