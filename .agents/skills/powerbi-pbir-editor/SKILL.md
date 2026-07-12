@@ -37,66 +37,118 @@ Never use legacy, descriptive, or regional names (e.g., `columnStackedChart` or 
 
 ---
 
-## 2. Projection Bindings by Chart Type
-Map fields inside `visual.json` under `queryState` using the following exact channel keys:
-
-### columnChart, barChart, lineChart, areaChart, ribbonChart
-* **`Category`**: The x-axis/y-axis dimension (e.g., `Month`, `Brand`).
-* **`Y`**: The measure values (e.g., `Ventas Netas USD`).
-* **`Series`**: (Optional) Legend field to cluster/stack the chart.
-
-### pieChart, donutChart, funnel
-* **`Category`**: Slice/Category dimension (e.g., `Species`, `Region`).
-* **`Y`**: Metric/Value (e.g., `Ventas Netas USD`).
-
-### treemap
-* **`Group`**: Top-level category (e.g., `Country`).
-* **`Details`**: (Optional) Inner sub-category (e.g., `Brand`).
-* **`Values`**: Metric/Value.
-
-### scatterChart
-* **`Category`**: Bubble identifiers (e.g., `Brand`).
-* **`X`**: X-Axis numerical measure.
-* **`Y`**: Y-Axis numerical measure.
-* **`Size`**: (Optional) Bubble size measure (e.g., `Unidades Totales`).
-
-### table & multiRowCard
-* **`Values`**: Flat array of column and measure projections.
-
-### matrix
-* **`Rows`**: Dimensions for rows (e.g., `Brand`).
-* **`Columns`**: (Optional) Dimensions for columns.
-* **`Values`**: Measures for cell values.
-
-### card & gauge
-* **`Y`**: The main KPI value projection.
+## 2. Directory Structure for Visuals (PBIR 2.0.0+ / page 2.x.x)
+In modern PBIR reports, visual files **must not** be placed directly in the page folder. They must be organized inside a `visuals/` subfolder, where each visual is its own directory containing a `visual.json` file:
+```
+{proyecto}.Report/
+  definition/
+    pages/
+      {page-guid}/
+        page.json
+        visuals/
+          {visual-name}/
+            visual.json
+```
 
 ---
 
-## 3. Formatting and Titles in visual.json
-To set visual titles programmatically in PBIR format:
+## 3. Projection Bindings by Chart Type (visualContainer Schema)
+Map fields inside `visuals/{visual-name}/visual.json` under `visual.query.queryState` using the following exact format and channel keys:
+
+* **Category**: X-axis/y-axis dimension.
+* **Y**: Metric value/measure.
+* **Values**: For flat tables (`tableEx`) or multi-row cards.
+
+### ⚠️ Aggregation Rule (CRITICAL)
+In the modern `visualContainer` schema:
+1. Chart visuals (treemap, funnel, barChart, columnChart, etc.) **cannot** aggregate columns directly in the visual JSON. If you put a `"Column"` projection on the Y-axis/Values of a chart, it will render as an **empty rectangle**.
+2. **You must first define a DAX measure in the table's TMDL file** (e.g. `measure 'Total Sales' = SUM('Sales'[Amount])` or `measure 'Promedio Edad' = AVERAGE('comidasrapidas'[edad])`).
+3. Reference that measure in `visual.json` using the `"Measure"` projection type:
+
 ```json
-"visualContainerObjects": {
-  "title": [{
-    "properties": {
-      "text": {"expr": {"Literal": {"Value": "'My Visual Title'"}}},
-      "fontSize": {"expr": {"Literal": {"Value": "14D"}}}
+"Category": {
+  "projections": [
+    {
+      "field": {
+        "Column": {
+          "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
+          "Property": "genero"
+        }
+      },
+      "queryRef": "comidasrapidas.genero",
+      "nativeQueryRef": "genero"
     }
-  }]
+  ]
+},
+"Y": {
+  "projections": [
+    {
+      "field": {
+        "Measure": {
+          "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
+          "Property": "Promedio Edad"
+        }
+      },
+      "queryRef": "comidasrapidas.Promedio Edad",
+      "nativeQueryRef": "Promedio Edad"
+    }
+  ]
+}
+```
+
+### Table Visuals (tableEx)
+Flat tables (`tableEx`) can use direct `"Column"` references without aggregations inside `"Values"`:
+```json
+"queryState": {
+  "Values": {
+    "projections": [
+      {
+        "field": {
+          "Column": {
+            "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
+            "Property": "nse"
+          }
+        },
+        "queryRef": "comidasrapidas.nse",
+        "nativeQueryRef": "nse"
+      }
+    ]
+  }
 }
 ```
 
 ---
 
-## 4. TMDL Measure Rules
+## 4. Formatting and Titles in visual.json
+To set visual titles programmatically in `visualContainer` format:
+```json
+"visualContainerObjects": {
+  "title": [
+    {
+      "properties": {
+        "show": {
+          "expr": { "Literal": { "Value": "true" } }
+        },
+        "text": {
+          "expr": { "Literal": { "Value": "'My Visual Title'" } }
+        }
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 5. TMDL Measure Rules
 When appending measures to a local `.tmdl` file:
 * **Duplicate Prevention:** Check if the measure name already exists in the file to avoid compiling duplicates.
 * **Double-Quoting Format Strings:** If `formatString` contains spaces, currencies, or symbols, **always** enclose it in double quotes:
   - `formatString: "$#,##0"` (Correct)
-  - `formatString: $#,##0` (Incorrect - will crash Power BI on load)
+  - `formatString: $#,##0` (Incorrect - will crash Power BI on open)
 
 ---
 
-## 5. Environment & Storage Warnings
+## 6. Environment & Storage Warnings
 * **Root Git Repositories:** Ensure no `.git` folder exists in `C:\` or `D:\` roots. This causes Power BI's automatic Git integration to try to write a `.gitignore` to the root drive, triggering an access permission crash.
-* **Cache Management:** Deleting `.pbi/cache.abf` is a useful troubleshooting step to force a clean metadata rebuild, but always advise the user to click **`Actualizar`** (Refresh) and save (Ctrl + S) immediately after opening to recreate the cache and remove yellow warning banners.
+* **Close Power BI Before Edits:** Always kill Power BI Desktop (`taskkill /IM PBIDesktop.exe /F`) before editing PBIR JSON or TMDL files, as it caches files in memory and will overwrite your changes on save or close.
