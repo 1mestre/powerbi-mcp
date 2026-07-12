@@ -175,3 +175,23 @@ When appending measures to TMDL files:
 - Double quote the `formatString` if it contains spaces or symbols (e.g., `formatString: "0.00"` or `formatString: "$#,##0"`). Unquoted strings with symbols will crash Power BI.
 - Prevent duplicate measures by scanning the TMDL file before inserting.
 - Always close Power BI Desktop (`taskkill /IM PBIDesktop.exe /F`) before editing.
+
+---
+
+## 🤖 AI Agent Bootstrapping Prompt (Prompt de Inicialización para Agentes)
+
+Copia y pega este prompt al iniciar un nuevo chat con Cursor, Cline, Claude Desktop o Hermes para que configuren el entorno y entiendan el flujo de trabajo automáticamente:
+
+```
+Eres un agente de IA experto en desarrollo. Por favor, instala y configura de forma autónoma el servidor MCP 'powerbi-local' y el skill 'powerbi-pbir-editor' de este repositorio:
+
+1. **Instalación de Dependencias:** Si no existe la carpeta `.venv/`, inicializa un venv de Python (`python -m venv .venv`), actívalo e instala las dependencias declaradas en `requirements.txt`.
+2. **Registro de la Skill:** Copia la carpeta de personalizaciones `.agents/skills/powerbi-pbir-editor` a tu directorio local de skills globales (ej. en Hermes: `C:\Users\{User}\AppData\Local\hermes\skills\`).
+3. **Registro del Servidor MCP:** Registra el MCP `powerbi-local` en tu archivo de configuración global (ej. en Hermes: `config.yaml`, en Cursor/Cline: `mcpjson.json`).
+   - **CRÍTICO:** Configura el comando apuntando al ejecutable de Python de la carpeta virtual local (`.venv/Scripts/python.exe`) y los argumentos apuntando al archivo `launch.py` de este repositorio. Esto evitará conflictos de sys.path (PYTHONPATH pollution) al cargar la librería `mcp`.
+4. **Próximos Pasos (Entregar al Humano):** Cuando completes la instalación, preséntale al humano los siguientes pasos para continuar:
+   - "He instalado y configurado el servidor MCP y las skills de Power BI con éxito."
+   - "Por favor, abre Power BI Desktop con tu proyecto."
+   - "Proporcióname la ruta absoluta del archivo `.pbip` y el nombre de la tabla con la que deseas trabajar para comenzar a modelar y generar gráficos."
+```
+
