@@ -140,12 +140,13 @@ To set visual titles programmatically in `visualContainer` format:
 
 ---
 
-## 5. TMDL Measure Rules
-When appending measures to a local `.tmdl` file:
+## 5. TMDL Measure & Partition Rules
+When appending or modifying measures in a local `.tmdl` file:
 * **Duplicate Prevention:** Check if the measure name already exists in the file to avoid compiling duplicates.
 * **Double-Quoting Format Strings:** If `formatString` contains spaces, currencies, or symbols, **always** enclose it in double quotes:
   - `formatString: "$#,##0"` (Correct)
   - `formatString: $#,##0` (Incorrect - will crash Power BI on open)
+* **Partition Preservation (CRÍTICO):** **NEVER** modify or delete the `partition {tabla} = m` block or the `annotation PBI_ResultType = Table` block located at the bottom of the `.tmdl` file. Deleting the partition block will cause a fatal load crash in Power BI Desktop with the error: `"Todas las tablas deben contener al menos una partición con la propiedad Full DataView"`. Any automated regex or parsing scripts to wipe/add measures must leave the partition block untouched.
 
 ---
 
