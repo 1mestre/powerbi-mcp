@@ -15,7 +15,8 @@ Copy and paste this prompt when starting a new session with Cursor, Cline, Claud
 2. **Skill Registration:** Copy the `.agents/skills/powerbi-pbir-editor` customizations directory to your local global skills directory (e.g., in Hermes: `C:\Users\{User}\AppData\Local\hermes\skills\`).
 3. **MCP Server Registration:** Register the `powerbi-local` MCP server in your global configuration file (e.g., in Hermes: `config.yaml`, in Cursor/Cline: `mcpjson.json`).
    - **CRITICAL:** Configure the command pointing to the Python executable of the local virtual environment (`.venv/Scripts/python.exe`) and the arguments pointing to the `launch.py` script of this repository. This prevents sys.path conflicts (PYTHONPATH pollution) when importing the `mcp` library.
-4. **Next Steps (Request from Human):** Once the installation is complete, present the following next steps to the human to proceed:
+4. **Understanding Your Capabilities (CRITICAL):** Do not assume you cannot create report pages or visuals programmatically just because the MCP tools don't have visual creation functions. You have full filesystem write access. You can and should create new pages and visuals by creating directories in the `.Report/definition/pages/` folder and writing `visual.json` files in their `visuals/` subfolders according to the `powerbi-pbir-editor` skill rules. Never tell the user you cannot create visuals; you can always write files.
+5. **Next Steps (Request from Human):** Once the installation is complete, present the following next steps to the human to proceed:
    - "I have successfully installed and configured the Power BI MCP server and skills."
    - "Please open Power BI Desktop with your project."
    - "Provide me with the absolute path to your `.pbip` file and the name of the table you want to work with so I can start modeling and generating charts."
