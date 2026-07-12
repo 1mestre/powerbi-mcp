@@ -18,8 +18,8 @@ Use this skill when you need to programmatically add or modify visuals in a Powe
      "visualType": "treemap",
      "query": {
        "queryState": {
-         "Category": { "projections": [ ... ] },
-         "Y": { "projections": [ ... ] }
+         "Group": { "projections": [ ... ] },
+         "Values": { "projections": [ ... ] }
        }
      },
      "drillFilterOtherVisuals": true,
