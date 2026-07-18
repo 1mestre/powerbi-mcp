@@ -1,6 +1,6 @@
 ---
 name: powerbi-pbir-troubleshooting
-description: Operational traps, UTF-8 BOM encoding fixes, slicer orientation values, PBID rewrite behaviors, and Python JSON manipulation templates.
+description: Operational traps, UTF-8 BOM encoding fixes, slicer orientation values, PBID rewrite behaviors, theme switching traps, and Python JSON manipulation templates.
 ---
 
 # Power BI PBIR Operational Traps & Troubleshooting Skill
@@ -67,6 +67,62 @@ Donut and pie charts with explicit `objects.legend` and `objects.labels` can fai
 Treemaps use the theme's `dataColors` palette across all categories automatically. Adding `objects.dataPoint` with a single `ThemeDataColor` overrides all rectangles to one color. Using `ColorId: 0` sets them to the **background color** (`#F7F5F2`), making them invisible.
 **Fix:** Do NOT include `dataPoint` in treemap objects. Use `"objects": {}`.
 
+### 2.5 Slicer Responsive Collapse Trap (Full-Width Filter Bars)
+
+**Symptom:** A slicer configured with `responsive: true` and `orientation: "1"` (horizontal) collapses into a vertical search-list mode showing only the column name (e.g., `main_category`) and 1–2 items below it when the container height is ≤ 50 px. The slicer appears cut off and non-interactive.
+
+**Root cause:** `responsive: true` + small height → Power BI ignores the `orientation` value entirely and forces a compressed search/list mode. The `orientation` property is only respected when `responsive` is `false`.
+
+**Orientation reference:**
+
+| Value | Mode | When to use |
+|-------|------|-------------|
+| `"0"` | Vertical list (multi-row) | Sidebars with ample vertical space |
+| `"1"` | Horizontal tiles | ONLY with `responsive: false` AND height ≥ 80 px |
+| `"2"` | Dropdown (collapsible) | **ALWAYS use for compact full-width filter bars** |
+
+**Fix — NEVER use `responsive: true` on slicers with height ≤ 80 px. ALWAYS use `orientation: "2"` (dropdown) for compact filter bar slicers.** Additionally:
+- Set `general.responsive: false` — required for orientation to be respected
+- Set `header.show: false` — prevents the column name from appearing as an internal label inside the slicer
+- Set `visualContainerObjects.title.show: false` — suppress the container title when surrounding context makes it redundant
+- Set `items.background` border color to the theme accent — provides visual feedback that the control is interactive
+
+**Correct template — compact dropdown slicer for filter bars:**
+```json
+"objects": {
+  "general": [{
+    "properties": {
+      "responsive": { "expr": { "Literal": { "Value": "false" } } }
+    }
+  }],
+  "header": [{
+    "properties": {
+      "show": { "expr": { "Literal": { "Value": "false" } } }
+    }
+  }],
+  "items": [{
+    "properties": {
+      "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#F8FAFC'" } } } } },
+      "background": { "solid": { "color": { "expr": { "Literal": { "Value": "'#464858'" } } } } },
+      "selectedColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#D99B7F'" } } } } },
+      "orientation": { "expr": { "Literal": { "Value": "2" } } },
+      "singleSelect": { "expr": { "Literal": { "Value": "false" } } }
+    }
+  }]
+}
+```
+
+**To hide the container title**, set this in `visualContainerObjects` (sibling of `objects` inside the `visual` block):
+```json
+"visualContainerObjects": {
+  "title": [{
+    "properties": {
+      "show": { "expr": { "Literal": { "Value": "false" } } }
+    }
+  }]
+}
+```
+
 ---
 
 ## 3. Visual Creation & PBID Engine Behaviors
@@ -128,6 +184,188 @@ Measures or columns with spaces use dot-notation without brackets:
 "queryRef": "amazon_clean.Total Products",
 "nativeQueryRef": "Total Products"
 ```
+
+---
+
+## 5. Theme Switching Traps (CRITICAL)
+
+Switching a PBIR report theme programmatically (e.g., from `DarkNavy` to `SlateAndTerracotta`) involves 4 silent failure modes. All 4 MUST be addressed or the new theme will partially apply — layout changes but colors, backgrounds, and chart series remain from the old theme.
+
+### 5.1 Trap 1 — Theme Cache Invalidation
+
+PBID caches the active theme in `cache.abf` inside `.SemanticModel/.pbi/`. If this file exists when the report is opened after a theme change, PBID reads colors from cache and ignores the new theme JSON entirely.
+
+**ALWAYS delete `cache.abf` before reopening PBID after any theme change:**
+```python
+import os
+
+cache_path = r"MyReport.SemanticModel\.pbi\cache.abf"
+if os.path.exists(cache_path):
+    os.remove(cache_path)
+    print("cache.abf deleted")
+```
+
+### 5.2 Trap 2 — New Theme File Name Not Resolved
+
+If you create a NEW theme file (e.g., `SlateAndTerracotta.json`) and reference it in `report.json`, PBID may silently fall back to the default theme or the previous theme. PBID's theme resolver has issues resolving theme names that were never previously registered in the report session.
+
+**NEVER create a new theme file. ALWAYS overwrite the existing theme file in `definition/BaseThemes/`**, keeping the same filename and the same `"name"` field inside the JSON. Only replace the color values:
+
+```python
+import json
+
+theme_path = r"MyReport.Report\definition\BaseThemes\DarkNavy.json"
+
+with open(theme_path, "r", encoding="utf-8") as f:
+    theme = json.load(f)
+
+# Replace colors IN PLACE — do NOT rename the file or change theme["name"]
+theme["dataColors"] = [
+    "#C0392B", "#E67E22", "#F1C40F",
+    "#27AE60", "#2980B9", "#8E44AD",
+    "#16A085", "#D35400"
+]
+theme["background"] = "#1C2B3A"
+theme["foreground"] = "#ECF0F1"
+
+with open(theme_path, "w", encoding="utf-8") as f:
+    json.dump(theme, f, indent=2, ensure_ascii=False)
+```
+
+### 5.3 Trap 3 — `dataColors` Do Not Propagate to Pre-Rendered Charts
+
+Charts that were previously saved while a different theme was active have their series colors baked into `visual.json` under `objects.dataPoint`. The new theme's `dataColors` palette does NOT override these explicit per-series color assignments.
+
+**MUST force series colors explicitly in each chart's `visual.json`:**
+```python
+import json, glob, os
+
+DATA_COLORS = [
+    "#C0392B", "#E67E22", "#F1C40F",
+    "#27AE60", "#2980B9", "#8E44AD"
+]
+
+visual_files = glob.glob(
+    r"MyReport.Report\definition\pages\**\visuals\**\visual.json",
+    recursive=True
+)
+
+for vpath in visual_files:
+    with open(vpath, "r", encoding="utf-8") as f:
+        v = json.load(f)
+
+    vtype = v.get("visual", {}).get("visualType", "")
+    # Skip visuals that must NOT have dataPoint (e.g. treemap — see §2.4)
+    if vtype in ("treemap",):
+        continue
+
+    data_point = []
+    for i, color in enumerate(DATA_COLORS):
+        data_point.append({
+            "id": {"$id": str(i)},
+            "properties": {
+                "fill": {
+                    "solid": {"color": {"expr": {"Literal": {"Value": f"'{color}'"}}}}
+                }
+            }
+        })
+
+    v.setdefault("visual", {}).setdefault("objects", {})["dataPoint"] = data_point
+
+    with open(vpath, "w", encoding="utf-8") as f:
+        json.dump(v, f, indent=2, ensure_ascii=False)
+
+print(f"Patched {len(visual_files)} visual files")
+```
+
+### 5.4 Trap 4 — Canvas Background Requires `page.json` Override
+
+`visualStyles.page.*.background` inside the theme JSON is NOT sufficient to change the canvas background color. PBID ignores that key for the canvas. The background MUST be set directly in each page's `page.json`:
+
+```python
+import json, glob
+
+BG_COLOR = "#1C2B3A"  # Must match theme["background"]
+
+page_files = glob.glob(
+    r"MyReport.Report\definition\pages\**\page.json",
+    recursive=True
+)
+
+for ppath in page_files:
+    with open(ppath, "r", encoding="utf-8") as f:
+        page = json.load(f)
+
+    page.setdefault("objects", {})["background"] = [
+        {
+            "properties": {
+                # NOTE: NO 'show' property here — it causes a schema validation error in page.json
+                # 'show' is only valid in visualContainerObjects, NOT in page-level objects
+                "color": {
+                    "solid": {
+                        "color": {"expr": {"Literal": {"Value": f"'{BG_COLOR}'"}}}
+                    }
+                },
+                "transparency": {"expr": {"Literal": {"Value": "0"}}}
+            }
+        }
+    ]
+
+    with open(ppath, "w", encoding="utf-8") as f:
+        json.dump(page, f, indent=2, ensure_ascii=False)
+
+print(f"Background set in {len(page_files)} pages")
+```
+
+### 5.6 Trap 5 — `show` Is INVALID in `page.json` background (Schema Error)
+
+Power BI validates `page.json` against a strict JSON schema. The `background` property inside `page.json → objects` does **NOT** accept a `show` field. Including it causes an immediate load error:
+
+> *"Se ha incluido una propiedad 'show' adicional en la propiedad /objects/background/0/properties"*
+
+This schema difference is a common mistake because `visualContainerObjects.background` in `visual.json` DOES accept `show`.
+
+**Rule:** `page.json` background only accepts `color` and `transparency`. Never add `show`.
+
+```json
+// WRONG — causes schema validation error in page.json
+"background": [{
+  "properties": {
+    "show": { "expr": { "Literal": { "Value": "true" } } },  // <- INVALID HERE
+    "color": { ... }
+  }
+}]
+
+// CORRECT — page.json background
+"background": [{
+  "properties": {
+    "color": {
+      "solid": { "color": { "expr": { "Literal": { "Value": "'#0F3040'" } } } }
+    },
+    "transparency": { "expr": { "Literal": { "Value": "0" } } }
+  }
+}]
+```
+
+| Context | `show` valid? | `color` valid? | `transparency` valid? |
+|---|---|---|---|
+| `page.json → objects.background` | **NO** — schema error | YES | YES |
+| `visual.json → visualContainerObjects.background` | YES | YES | YES |
+
+
+
+### 5.5 Safe Theme-Switch Checklist
+
+Execute ALL steps in order. Skipping any step causes partial application:
+
+| Step | Action | Why |
+|------|--------|-----|
+| 1 | `taskkill /IM PBIDesktop.exe /F` | MUST be closed before file edits |
+| 2 | Delete `cache.abf` | Clears old theme from PBID cache |
+| 3 | Overwrite existing theme JSON (same filename) | New filenames may not resolve |
+| 4 | Set `page.json → objects.background` on every page | Theme JSON `visualStyles.background` is ignored |
+| 5 | Set `visual.json → objects.dataPoint` on every chart | Baked-in colors override theme `dataColors` |
+| 6 | Reopen PBID and verify all pages | Confirm colors, backgrounds, and chart series |
 
 ---
 

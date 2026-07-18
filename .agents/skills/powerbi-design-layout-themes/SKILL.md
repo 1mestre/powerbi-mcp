@@ -69,6 +69,33 @@ To ensure reports look clean, high-contrast, professional, and visually unified 
 
 ---
 
+## 4. Premium Aesthetic Guidelines & Intentional Styling for Dashboards
+
+To elevate standard dashboards into premium, modern executive interfaces, apply these styling patterns:
+
+### 1. Intention-Based KPI Colors (Color semántico por intención)
+Differentiate the primary values on KPI Cards based on what the metric signifies to the user:
+* **Information (Neutral/Volume):** Use an elegant light blue (`#3B82F6` or similar) for counts, inventory, or products.
+* **Success/Achievement:** Use emerald green (`#10B981`) or gold (`#FBBF24`) for key accomplishments, target completions, or average ratings.
+* **Warning/Alert:** Use warm amber (`#F59E0B`) or light orange for discount percentages, low stocks, or rates that need attention.
+
+### 2. Glowing Borders & Highlighted Cards (Glow / Resplandor)
+To draw immediate executive focus to the most critical "North Star" metrics (e.g., Total Revenue, Avg Rating):
+* Set a slightly thicker border (`2px` instead of `1px`).
+* Use a bright, contrasting color for that border (e.g., `#FF9E2C` / Terracota suave) against the dark theme background.
+* Maintain a darker neutral border (`#2E3F4C` or similar) on secondary cards to keep the visual hierarchy clean.
+
+### 3. Visual Emojis/Symbols in Titles
+Embed clean unicode symbols directly in visual container titles to make them instantly recognizable and visual (e.g., `"⭐ Avg Rating"`, `"💰 Total Revenue"`, `"📂 Filter by Category"`).
+
+### 4. Distinct Series Colors in Chart Elements
+Do not paint every bar or column chart in the same uniform accent color. Vary the series colors logically:
+* **Revenue/Financial charts:** Use the primary theme highlight (`#D99B7F` / Terracota).
+* **Volume/Quantity charts:** Use information blue (`#3B82F6`).
+* **Performance/Rating charts:** Use success green (`#10B981`).
+
+---
+
 ## 3. Premium Theme Catalogue (Modos Claro y Oscuro)
 
 These pre-configured themes are designed to enforce perfect readability and contrast standards while projecting distinct, premium vibes:
