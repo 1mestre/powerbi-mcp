@@ -402,7 +402,47 @@ To ensure reports look clean, high-contrast, professional, and visually unified 
 
 ---
 
-## 10. Premium Theme Catalogue (Modos Claro y Oscuro)
+## 10. Operational Traps & Field-Proven Fixes (Amazon Dashboard After-Action)
+
+### 10.1 UTF-8 WITHOUT BOM (CRITICAL FOR PBIP LOAD)
+Power BI Project (PBIP) requires ALL JSON files to be **UTF-8 encoded WITHOUT Byte Order Mark (BOM)**. PowerShell 5.1 `Set-Content -Encoding UTF8` adds a BOM, which causes PBID to crash on open with: *"Only text with UTF8 encoding without BOM is supported. Detected BOM: 'UTF-8'"*.
+**Fix:** Use .NET directly:
+```powershell
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($path, $content, $utf8NoBom)
+```
+
+### 10.2 AVOID `%` IN MEASURE NAMES
+The `%` character in DAX measure names (even inside TMDL single quotes) causes grouped charts (columnChart, barChart, etc.) to render as **empty rectangles**. Power BI's internal engine interprets the `%` as a modulus operator or format specifier rather than a literal character.
+**Fix:** Use `Pct` instead of `%` in all measure names:
+- `measure 'Avg Discount %'` -> `measure 'Avg Discount Pct'`
+
+### 10.3 NO `dataPoint` ON TREEMAP
+Treemaps use the theme's `dataColors` palette across all categories automatically. Adding `objects.dataPoint` with a single `ThemeDataColor` overrides all rectangles to one color. Using `ColorId: 0` sets them to the **background color** (`#F7F5F2`), making them invisible.
+**Fix:** Do NOT include `dataPoint` in treemap objects. Use `"objects": {}`.
+
+### 10.4 KPI Card Minimum Setup (Zero-Crop)
+Every KPI card MUST include:
+- **`objects.categoryLabel`** with `show: false`, `fontSize: 1`, `transparency: 100`
+- **`objects.labels`** with `color: #FFFFFF`, `fontSize: 28`
+- **`visualContainerObjects.background`** with solid dark color, `show: true`
+- **`visualContainerObjects.title`** with `show: true`, `fontColor: #F8FAFC`
+
+### 10.5 All Charts Need Explicit Container Background
+Charts render transparent on the page unless `visualContainerObjects` includes a `background` and `border` block with explicit `#FFFFFF` background.
+
+### 10.6 Canvas Height Budget (1280x1000)
+Use **1280x1000** when the layout includes: 1 slicer row (110px) + 4 KPI cards (110px) + 2 chart rows (290px each) + bottom row (110px) = 1000px with 15px gaps.
+
+### 10.7 `queryRef` / `nativeQueryRef` with Spaces
+Measures with spaces use dot-notation without brackets:
+```json
+"queryRef": "amazon_clean.Total Products",
+"nativeQueryRef": "Total Products"
+```
+
+---
+## 11. Premium Theme Catalogue (Modos Claro y Oscuro)
 These pre-configured themes are designed to enforce perfect readability and contrast standards while projecting distinct, premium vibes:
 
 ### 1. 🌸 **"Magenta Blossom" (Modo Claro)**
