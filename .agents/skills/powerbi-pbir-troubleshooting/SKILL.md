@@ -99,9 +99,10 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 
 **Symptoms of manual JSON injection:**
 1. **`CustomVisualNotFound` Error:** Power BI Desktop throws `"Para ver este objeto visual personalizado, primero debe agregarlo a este informe: rVisual"`. Power BI treats R script controls as custom visual extensions that require internal package registration IDs in `report.json`. Use `pythonVisual` with native Matplotlib instead.
-2. **Blank/Empty Container:** Python scripts that call non-installed local packages (e.g. `seaborn`) or fail Python runtime checks render as completely blank dark boxes without throwing stack trace errors.
+2. **Blank/Empty Container:** If `queryState` is missing `"Values": { "projections": [...] }` or imports uninstalled libraries (`seaborn`), Power BI leaves the `dataset` variable empty and renders a blank dark box without stack trace dialogs.
 
 **Rules for Working Python Visuals (`pythonVisual`):**
+* **`queryState.Values` Projections:** ALWAYS bind data columns under `queryState.Values.projections`. This feeds the dataframe columns into the `dataset` variable inside Python.
 * **Pure Matplotlib + Pandas Only:** ALWAYS use standard Python libraries pre-installed in Windows Python environments (`matplotlib`, `pandas`, `numpy`). Avoid third-party libraries (`seaborn`) to ensure zero-blank rendering.
 * **Single Quotes String Escaping:** Set `"scriptSource": { "expr": { "Literal": { "Value": "'import matplotlib...'" } } }`. The `Value` string MUST be enclosed in outer single quotes `'...'`.
 
