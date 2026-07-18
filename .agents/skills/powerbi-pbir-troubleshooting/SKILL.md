@@ -67,6 +67,25 @@ Donut and pie charts with explicit `objects.legend` and `objects.labels` can fai
 Treemaps use the theme's `dataColors` palette across all categories automatically. Adding `objects.dataPoint` with a single `ThemeDataColor` overrides all rectangles to one color. Using `ColorId: 0` sets them to the **background color** (`#F7F5F2`), making them invisible.
 **Fix:** Do NOT include `dataPoint` in treemap objects. Use `"objects": {}`.
 
+### 2.6 Multi-Color Bar Charts Enforcement (`showAllDataPoints: true`)
+When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to rendering all bars with a single monochrome color from the theme. Deleting `dataPoint` alone does NOT automatically color each category bar differently.
+
+**Fix:** You MUST explicitly set `"showAllDataPoints": { "expr": { "Literal": { "Value": "true" } } }` inside `objects.dataPoint` to force Power BI to apply the distinct colors from the active theme's `dataColors` palette to each individual bar:
+
+```json
+"objects": {
+  "dataPoint": [
+    {
+      "properties": {
+        "showAllDataPoints": {
+          "expr": { "Literal": { "Value": "true" } }
+        }
+      }
+    }
+  ]
+}
+```
+
 ### 2.5 Slicer Responsive Collapse Trap (Full-Width Filter Bars)
 
 **Symptom:** A slicer configured with `responsive: true` and `orientation: "1"` (horizontal) collapses into a vertical search-list mode showing only the column name (e.g., `main_category`) and 1–2 items below it when the container height is ≤ 50 px. The slicer appears cut off and non-interactive.
