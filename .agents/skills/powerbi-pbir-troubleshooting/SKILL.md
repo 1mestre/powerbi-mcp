@@ -67,19 +67,27 @@ Donut and pie charts with explicit `objects.legend` and `objects.labels` can fai
 Treemaps use the theme's `dataColors` palette across all categories automatically. Adding `objects.dataPoint` with a single `ThemeDataColor` overrides all rectangles to one color. Using `ColorId: 0` sets them to the **background color** (`#F7F5F2`), making them invisible.
 **Fix:** Do NOT include `dataPoint` in treemap objects. Use `"objects": {}`.
 
-### 2.6 Multi-Color Bar Charts Enforcement (`showAllDataPoints: true`)
-When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to rendering all bars with a single monochrome color from the theme. Deleting `dataPoint` alone does NOT automatically color each category bar differently.
+### 2.6 Multi-Color Bar Charts Enforcement (Explicit `scopeId` Selectors)
+When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to rendering all category bars with a single monochrome color.
 
-**Fix:** You MUST explicitly set `"showAllDataPoints": { "expr": { "Literal": { "Value": "true" } } }` inside `objects.dataPoint` to force Power BI to apply the distinct colors from the active theme's `dataColors` palette to each individual bar:
+**Fix:** To force distinct colors on every single bar, inject an array of `"dataPoint"` entries with explicit `scopeId` selectors matching each category value:
 
 ```json
 "objects": {
   "dataPoint": [
     {
-      "properties": {
-        "showAllDataPoints": {
-          "expr": { "Literal": { "Value": "true" } }
-        }
+      "properties": { "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FF9E2C'" } } } } } },
+      "selector": {
+        "metadata": "Entity.Column",
+        "data": [{
+          "scopeId": {
+            "Comparison": {
+              "ComparisonKind": 0,
+              "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "Entity" } }, "Property": "Column" } },
+              "Right": { "Literal": { "Value": "'Category 1'" } }
+            }
+          }
+        }]
       }
     }
   ]
