@@ -221,7 +221,7 @@ To style cards with solid backgrounds and white callout text:
   ```
 
 ### Donut Chart Slices Explicit Coloring
-To override default theme colors for individual slices (e.g., coloring specific values like 'Amazon' or 'Merchant'), use `"dataPoint"` with a series selector:
+To override default theme colors for individual slices (e.g., coloring specific values like 'Amazon' or 'Merchant'), use `"dataPoint"` with a series selector using `scopeId` and a `Comparison` expression (never use raw `queryRef` or `value` under `data[0]`, which will throw schema validation errors):
 ```json
 "objects": {
   "dataPoint": [
@@ -233,8 +233,26 @@ To override default theme colors for individual slices (e.g., coloring specific 
         "metadata": "Fact_Sales.Fulfilment",
         "data": [
           {
-            "queryRef": "Fact_Sales.Fulfilment",
-            "value": "'Amazon'"
+            "scopeId": {
+              "expr": {
+                "Comparison": {
+                  "ComparisonKind": 0,
+                  "Left": {
+                    "expr": {
+                      "Column": {
+                        "Expression": { "SourceRef": { "Entity": "Fact_Sales" } },
+                        "Property": "Fulfilment"
+                      }
+                    }
+                  },
+                  "Right": {
+                    "expr": {
+                      "Literal": { "Value": "'Amazon'" }
+                    }
+                  }
+                }
+              }
+            }
           }
         ]
       }
