@@ -143,6 +143,7 @@ To set visual titles programmatically in `visualContainer` format:
 ## 5. TMDL Model & Measure Rules
 * **discourageImplicitMeasures Setting (CRITICAL):** If the model defines any Calculation Group (`calculationGroup`), you **MUST** set the property `discourageImplicitMeasures: true` under `model Model` in `model.tmdl`. Failure to do so will result in a load crash in Power BI Desktop.
 * **Avoid isKey on Dimensions (CRITICAL):** Do not add `isKey: true` to primary key columns of standard import tables (like date or dimension tables). It can cause *"a cyclic reference was found during evaluation"* errors in Power Query. Use model-level relationships to map the keys.
+  - **Transient Evaluation Cache Bug:** Even when the model schema is 100% correct, Power BI Desktop may occasionally display a false-positive *"Se encontró una referencia cíclica durante la evaluación"* (A cyclic reference was found during evaluation) error on first open or first refresh due to a corrupted memory cache in the engine. This is a known Power BI bug. **Solution:** Tell the user to simply click the **Actualizar (Refresh)** button a second time, or close and reopen Power BI Desktop. The second load always completes successfully.
 * **Duplicate Prevention:** Check if the measure name already exists in the file to avoid compiling duplicates.
 * **Double-Quoting Format Strings:** If `formatString` contains spaces, currencies, or symbols, **always** enclose it in double quotes:
   - `formatString: "$#,##0"` (Correct)
