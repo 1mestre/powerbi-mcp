@@ -234,21 +234,19 @@ To override default theme colors for individual slices (e.g., coloring specific 
         "data": [
           {
             "scopeId": {
-              "expr": {
-                "Comparison": {
-                  "ComparisonKind": 0,
-                  "Left": {
-                    "expr": {
-                      "Column": {
-                        "Expression": { "SourceRef": { "Entity": "Fact_Sales" } },
-                        "Property": "Fulfilment"
-                      }
+              "Comparison": {
+                "ComparisonKind": 0,
+                "Left": {
+                  "expr": {
+                    "Column": {
+                      "Expression": { "SourceRef": { "Entity": "Fact_Sales" } },
+                      "Property": "Fulfilment"
                     }
-                  },
-                  "Right": {
-                    "expr": {
-                      "Literal": { "Value": "'Amazon'" }
-                    }
+                  }
+                },
+                "Right": {
+                  "expr": {
+                    "Literal": { "Value": "'Amazon'" }
                   }
                 }
               }
