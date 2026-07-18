@@ -322,10 +322,14 @@ To prevent visuals from looking cramped, overlapping, or having low-contrast dou
   - **Tables:** Height must be **at least `220px`** (recommended: `240px`) to allow scroll-free visibility.
   - **Slicers:** Height must be **at least `100px`** (recommended: `110px`).
 
-### KPI Card Styling Rules (No Overlapping Text):
-- **Hide Category Label:** Always set `"categoryLabel"` properties: `show: false`.
-- **Fail-safe Category Label Color Matching:** Set `"categoryLabel"` property `"color"` to the **exact same hex code as the card's background color**. This ensures that even if Power BI ignores the `show: false` instruction and renders the label, it remains completely invisible to the user.
-- **Text Sizing:** Title size: `9pt` or `10pt`. Callout value size: `20pt` to `24pt`.
+### KPI Card Styling Rules (Zero Crop Guarantee & Clean Typography):
+- **Card Height Standard:** Height must be **at least `100px`** to ensure full vertical breathing room for callout values and titles.
+- **Hide Category Label (Zero-Crop Fail-safe):** Always set `"categoryLabel"` properties:
+  - `"show"`: `false`
+  - `"fontSize"`: `1` (1pt font size so it occupies 0 vertical space)
+  - `"transparency"`: `100` (100% transparent)
+  - `"color"`: Set to the **exact same hex code as the card's background color**.
+- **Text Sizing & Alignment:** Title size: `9pt` or `10pt` (`fontColor`: `#F8FAFC` or `#111827`). Callout value size: `22pt`.
 
 ### Layout Validation Script:
 Before compiling report pages, run a validation script to programmatically assert coordinate boundaries and prevent overlaps.
