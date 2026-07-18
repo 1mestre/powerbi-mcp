@@ -423,7 +423,7 @@ Slicer items require explicit `orientation` to show items. Power BI rewrites inv
 ```
 
 ### 10.3 POWER BI REWRITES VISUAL.JSON ON OPEN (CRITICAL WORKFLOW)
-Power BI Desktop automatically upgrades visual.json schema from `1.0.0` to `2.10.0` and strips invalid properties on load. If a visual file is NOT rewritten (stays at `1.0.0` schema), it means Power BI FAILED to load it — the JSON has a structural error. **Debug method:** After opening PBID, check which visual files remained at `1.0.0` — those are the broken ones.
+Power BI Desktop automatically upgrades visual.json schema from `1.0.0` to `2.10.0` and strips invalid properties on load. If a visual file is NOT rewritten (stays at `1.0.0` schema), it means Power BI FAILED to load it — the JSON has a structural error. **Debug method:** After opening PBID, check which visual files remained at `1.0.0` — those are the broken ones. Note: PBID also rewrites visually successful files only; silently failing visuals are not rewritten. Manually created visuals may be silently skipped even with correct JSON.
 
 ### 10.4 DONUT/PIE CHARTS: START WITH MINIMAL OBJECTS
 Donut and pie charts with explicit `objects.legend` and `objects.labels` can fail to render in schema 1.0.0. **Fix:** Start with `"objects": {}` and schema `2.10.0`. Add legend/labels styling only after the chart renders with data.
@@ -456,6 +456,41 @@ Measures with spaces use dot-notation without brackets:
 "queryRef": "amazon_clean.Total Products",
 "nativeQueryRef": "Total Products"
 ```
+
+### 10.12 PBIR Role Names Differ from PBID Internal Names (CRITICAL)
+PBID writes `Group` (slicers) and `Legend` (donut) internally, but the PBIR schema uses different role names. When creating visuals via `pbir add visual`, use the **schema roles**:
+
+| Visual | PBID Internal | PBIR Schema (pbir-cli) |
+|--------|--------------|----------------------|
+| slicer | `Group` | `Values` |
+| donutChart | `Legend` | `Category` |
+| donutChart | `Category` (empty) | `Category` (empty) |
+| donutChart | `Y` (empty) | `Y` (empty) |
+
+**pbir-cli add command:**
+```bash
+# Slicer
+pbir add visual slicer "$page" -n "name" -t "Title" -x 15 -y 15 -w 400 -h 110 -d "Values:table.column"
+# Donut
+pbir add visual donutChart "$page" -n "name" -t "Title" -x 855 -y 265 -w 410 -h 290 -d "Category:table.column" -d "Y:table.Measure"
+```
+
+### 10.13 Use `pbir add visual` Instead of Manual JSON (CRITICAL)
+Manually creating `visual.json` files — even with correct structure, projections, and objects — may result in visuals that **pass pbir-cli validation but do not render in PBID**. The root cause is that PBID initializes visuals through its UI pipeline, and manually added files bypass this.
+
+**Solution:** Use `pbir add visual` to create new visuals. This generates correct JSON with PBID-compatible structure (proper `queryRef`, `nativeQueryRef`, `field` objects, schema version). After creation, add styling objects (legend, labels, header, items) via script.
+
+**Workflow:**
+1. Close PBID
+2. `pbir add visual <type> "$page" -n "name" -t "Title" -x X -y Y -w W -h H -d "Role:table.field"`
+3. Add `objects` for styling via PowerShell
+4. Reopen PBID
+
+### 10.14 pbir-cli Validation Passes for Manually Created Visuals
+`pbir validate` does NOT detect the difference between manually created and pbir-cli created visuals. Both pass validation. The rendering difference is internal to PBID's initialization pipeline. **Do not rely solely on pbir-cli validation to confirm visuals will render.**
+
+### 10.15 Slicer Values Role Required
+pbir-cli validation warns: `slicer missing 'Values' role -- visual will not render without it`. This applies to pbir-cli created slicers. However, PBID-internal slicers (created via UI) use `Group` without issues. The `Values` role is only needed when creating via pbir-cli.
 
 ---
 ## 11. Premium Theme Catalogue (Modos Claro y Oscuro)
