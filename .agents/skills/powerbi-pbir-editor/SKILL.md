@@ -171,6 +171,38 @@ To set visual titles programmatically in `visualContainer` format:
   ```
 * **Mandatory Projection Keys:** Every field projection inside the `"projections": [...]` array must contain `"queryRef"` and `"nativeQueryRef"` as string values. Failing to include these strings will cause a report load crash.
 * **Page Folder Names:** Page folders under `pages/` must be named using 20-character lowercase hexadecimal strings or GUIDs. Do not use descriptive names.
+* **NO `visualContainers` in page.json (page schema 2.1.0):** The page schema 2.1.0 does NOT support a `visualContainers` array. Visuals are auto-discovered from the `visuals/` subdirectory. Do NOT add `visualContainers` to `page.json` — it will cause a schema validation error: *"Se ha incluido una propiedad 'visualContainers' adicional en la propiedad root"*.
+* **`objects` vs `visualContainerObjects` — STRICT SEPARATION (CRITICAL):** These two sections serve different purposes and mixing them causes schema validation errors:
+  - **`objects`** — Chart-level and visual-level styling properties. This is where you put:
+    - **Axis properties:** `categoryAxis`, `valueAxis`, `y2Axis`
+    - **Legend/Labels:** `legend`, `labels`, `dataLabels`, `categoryLabel`
+    - **Slicer settings:** `general` (with `responsive`), `items` (with `orientation`, `singleSelect`, `fontSize`, etc.)
+    - **Data point colors:** `dataPoint`
+    - **Grid/Plot settings:** `plotArea`, `grid`, `lineStyles`
+    - **Series formatting:** `seriesLabels`, `fillPoint`, `bubbles`
+  - **`visualContainerObjects`** — Container-level properties only. This is strictly for:
+    - `title` (show, text, fontColor)
+    - `background` (show, color, transparency)
+    - `border` (show, color, width)
+    - `outline`, `divider` (card-specific)
+  - **WRONG** (causes schema error):
+    ```json
+    "visualContainerObjects": {
+      "title": [{ "properties": { ... } }],
+      "categoryAxis": [{ "properties": { ... } }]  // ERROR: belongs in objects
+    }
+    ```
+  - **CORRECT:**
+    ```json
+    "objects": {
+      "categoryAxis": [{ "properties": { ... } }],
+      "valueAxis": [{ "properties": { ... } }]
+    },
+    "visualContainerObjects": {
+      "title": [{ "properties": { "show": { "expr": { "Literal": { "Value": "true" } } }, "text": { "expr": { "Literal": { "Value": "'My Chart'" } } } } }]
+    }
+    ```
+  - **Exception:** `"title"` is valid in BOTH `objects` and `visualContainerObjects`, but prefer `visualContainerObjects` for title because it follows the modern visualContainer schema.
 
 ---
 
