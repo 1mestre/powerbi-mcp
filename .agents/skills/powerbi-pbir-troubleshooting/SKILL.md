@@ -101,9 +101,11 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 1. **`CustomVisualNotFound` Error:** Power BI treats R (`rVisual`) controls as external extension packages that require internal package GUIDs in `report.json` / `StaticResources`.
 2. **Dark Blank Box:** Python (`pythonVisual`) script controls generated purely via code without UI binding fail to initialize the C++ / Python IPC bridge in Power BI Desktop's rendering canvas, drawing a dark empty box.
 
-**Strict Protocol for Client-Facing Reports:**
-* **Native Engine First (100% Guaranteed):** ALWAYS build executive pages using Power BI's native Fabric visual engine (`barChart`, `areaChart`, `donutChart`, `card`, `table`, `slicer`) with `scopeId` multi-color palettes, `Montserrat` font family, and `radius: 15D` rounded borders. Native visuals load instantly on any client PC or web browser without local Python/R runtime dependencies.
-* **If Python/R is Mandated:** You MUST manually drag-and-drop the Python or R visual container from the Power BI Desktop UI panel once, save the report, and ONLY THEN programmatically update the internal script string in `visual.json` under `objects.script[0].properties.scriptSource`.
+### 2.8 `activePageName` Metadata Consistency Rule
+When deleting, renaming, or reordering report pages in a PBIR project, **ALWAYS** verify that `"activePageName"` inside `pages.json` points to a valid, existing page name present in the `"pageOrder"` array.
+
+* **Symptom:** Power BI Desktop fails to open the report on launch and throws the error *"No se encontró ActivePageName"*.
+* **Fix:** Update `pages.json` so `"activePageName"` matches an active page directory name (e.g., `"39561f9ff71b78171e9c"`).
 
 ---
 
