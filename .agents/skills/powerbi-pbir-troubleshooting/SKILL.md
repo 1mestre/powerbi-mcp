@@ -94,17 +94,16 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 }
 ```
 
-### 2.7 Python & R Visual Incompatibility Trap (`CustomVisualNotFound`)
-**NEVER** attempt to inject `pythonVisual` or `rVisual` objects directly into a PBIR `visual.json` file programmatically without prior UI registration in Power BI Desktop.
+### 2.7 Python & R Visual Incompatibility Trap (`CustomVisualNotFound` / Dark Blank Boxes)
+**NEVER** attempt to create or inject `pythonVisual` or `rVisual` objects programmatically into a PBIR report folder without prior UI drag-and-drop registration in Power BI Desktop.
 
-**Symptoms of manual JSON injection:**
-1. **`CustomVisualNotFound` Error:** Power BI Desktop throws `"Para ver este objeto visual personalizado, primero debe agregarlo a este informe: rVisual"`. Power BI treats R script controls as custom visual extensions that require internal package registration IDs in `report.json`. Use `pythonVisual` with native Matplotlib instead.
-2. **Blank/Empty Container:** If `queryState` is missing `"Values": { "projections": [...] }` or imports uninstalled libraries (`seaborn`), Power BI leaves the `dataset` variable empty and renders a blank dark box without stack trace dialogs.
+**Root cause of blank containers & errors:**
+1. **`CustomVisualNotFound` Error:** Power BI treats R (`rVisual`) controls as external extension packages that require internal package GUIDs in `report.json` / `StaticResources`.
+2. **Dark Blank Box:** Python (`pythonVisual`) script controls generated purely via code without UI binding fail to initialize the C++ / Python IPC bridge in Power BI Desktop's rendering canvas, drawing a dark empty box.
 
-**Rules for Working Python Visuals (`pythonVisual`):**
-* **`queryState.Values` Projections:** ALWAYS bind data columns under `queryState.Values.projections`. This feeds the dataframe columns into the `dataset` variable inside Python.
-* **Pure Matplotlib + Pandas Only:** ALWAYS use standard Python libraries pre-installed in Windows Python environments (`matplotlib`, `pandas`, `numpy`). Avoid third-party libraries (`seaborn`) to ensure zero-blank rendering.
-* **Single Quotes String Escaping:** Set `"scriptSource": { "expr": { "Literal": { "Value": "'import matplotlib...'" } } }`. The `Value` string MUST be enclosed in outer single quotes `'...'`.
+**Strict Protocol for Client-Facing Reports:**
+* **Native Engine First (100% Guaranteed):** ALWAYS build executive pages using Power BI's native Fabric visual engine (`barChart`, `areaChart`, `donutChart`, `card`, `table`, `slicer`) with `scopeId` multi-color palettes, `Montserrat` font family, and `radius: 15D` rounded borders. Native visuals load instantly on any client PC or web browser without local Python/R runtime dependencies.
+* **If Python/R is Mandated:** You MUST manually drag-and-drop the Python or R visual container from the Power BI Desktop UI panel once, save the report, and ONLY THEN programmatically update the internal script string in `visual.json` under `objects.script[0].properties.scriptSource`.
 
 ---
 
