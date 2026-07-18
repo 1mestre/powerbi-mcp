@@ -94,6 +94,16 @@ Do not paint every bar or column chart in the same uniform accent color. Vary th
 * **Volume/Quantity charts:** Use information blue (`#3B82F6`).
 * **Performance/Rating charts:** Use success green (`#10B981`).
 
+### 5. Font Family & Zero-Friction Typography (e.g. Montserrat)
+To distribute reports without friction (so clients don't encounter missing font warnings or rendering fallbacks):
+* **Custom Typography (e.g. `Montserrat`):** Specify `"fontFamily": "Montserrat"` in the theme JSON and visual titles.
+* **Fallback Behavior:** If the client machine does not have the custom font installed, Power BI Desktop and Power BI Service automatically fallback to standard sans-serif system fonts (`Segoe UI` or `Arial`) without crashing or showing error dialogs.
+* **Universal Native Fonts (Zero-Friction Guarantee):** When building for enterprise clients with locked-down PCs, use universal fonts built into all Windows/Web environments: `Segoe UI`, `Segoe UI Semibold`, `DIN`, `Calibri`, or `Arial`.
+
+### 6. Python & R Custom Visuals (Cloud & Local Behavior)
+* **Local Power BI Desktop Execution:** Visualizing via Python (`matplotlib`, `seaborn`, `plotly`) or R (`ggplot2`) inside Power BI Desktop requires local Python/R runtime installations on the developer/client machine.
+* **Zero-Client-Friction Cloud Deployment (Power BI Service):** Once published to **Power BI Service (Cloud)**, Microsoft executes Python and R scripts on Azure cloud sandboxes automatically. The end-user client does NOT need Python or R installed on their machine to view interactive Python/R charts in their browser or mobile app.
+
 ---
 
 ## 3. Premium Theme Catalogue (Modos Claro y Oscuro)
