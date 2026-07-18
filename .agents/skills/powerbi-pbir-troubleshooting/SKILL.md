@@ -98,12 +98,12 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 **NEVER** attempt to inject `pythonVisual` or `rVisual` objects directly into a PBIR `visual.json` file programmatically without prior UI registration in Power BI Desktop.
 
 **Symptoms of manual JSON injection:**
-1. **`CustomVisualNotFound` Error:** Power BI Desktop throws `"Para ver este objeto visual personalizado, primero debe agregarlo a este informe: rVisual / pythonVisual"`. Power BI treats R and Python script controls as custom visual extensions that require internal report package registration IDs in `report.json` / `StaticResources`.
+1. **`CustomVisualNotFound` Error:** Power BI Desktop throws `"Para ver este objeto visual personalizado, primero debe agregarlo a este informe: rVisual"`. Power BI treats R script controls as custom visual extensions that require internal package registration IDs in `report.json`. Use `pythonVisual` with native Matplotlib instead.
 2. **Blank/Empty Container:** Python scripts that call non-installed local packages (e.g. `seaborn`) or fail Python runtime checks render as completely blank dark boxes without throwing stack trace errors.
 
-**Rules for Friction-Free Executive Reports:**
-* **Native Visuals First:** ALWAYS prefer Power BI's native visual types (`barChart`, `areaChart`, `donutChart`, `card`, `table`) with custom theme palettes, `scopeId` multi-colors, and `radius: 15D` rounded borders. Native visuals load instantaneously without requiring local R/Python environments or report extensions.
-* **If R/Python is Required:** Create and bind the Python/R visual container via the Power BI Desktop UI first, then edit the internal Python/R script string programmatically in `visual.json` under `objects.script[0].properties.scriptSource`.
+**Rules for Working Python Visuals (`pythonVisual`):**
+* **Pure Matplotlib + Pandas Only:** ALWAYS use standard Python libraries pre-installed in Windows Python environments (`matplotlib`, `pandas`, `numpy`). Avoid third-party libraries (`seaborn`) to ensure zero-blank rendering.
+* **Single Quotes String Escaping:** Set `"scriptSource": { "expr": { "Literal": { "Value": "'import matplotlib...'" } } }`. The `Value` string MUST be enclosed in outer single quotes `'...'`.
 
 ---
 
