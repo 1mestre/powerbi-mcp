@@ -94,6 +94,19 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 }
 ```
 
+### 2.7 Python & R Visual Incompatibility Trap (`CustomVisualNotFound`)
+**NEVER** attempt to inject `pythonVisual` or `rVisual` objects directly into a PBIR `visual.json` file programmatically without prior UI registration in Power BI Desktop.
+
+**Symptoms of manual JSON injection:**
+1. **`CustomVisualNotFound` Error:** Power BI Desktop throws `"Para ver este objeto visual personalizado, primero debe agregarlo a este informe: rVisual / pythonVisual"`. Power BI treats R and Python script controls as custom visual extensions that require internal report package registration IDs in `report.json` / `StaticResources`.
+2. **Blank/Empty Container:** Python scripts that call non-installed local packages (e.g. `seaborn`) or fail Python runtime checks render as completely blank dark boxes without throwing stack trace errors.
+
+**Rules for Friction-Free Executive Reports:**
+* **Native Visuals First:** ALWAYS prefer Power BI's native visual types (`barChart`, `areaChart`, `donutChart`, `card`, `table`) with custom theme palettes, `scopeId` multi-colors, and `radius: 15D` rounded borders. Native visuals load instantaneously without requiring local R/Python environments or report extensions.
+* **If R/Python is Required:** Create and bind the Python/R visual container via the Power BI Desktop UI first, then edit the internal Python/R script string programmatically in `visual.json` under `objects.script[0].properties.scriptSource`.
+
+---
+
 ### 2.5 Slicer Responsive Collapse Trap (Full-Width Filter Bars)
 
 **Symptom:** A slicer configured with `responsive: true` and `orientation: "1"` (horizontal) collapses into a vertical search-list mode showing only the column name (e.g., `main_category`) and 1–2 items below it when the container height is ≤ 50 px. The slicer appears cut off and non-interactive.
