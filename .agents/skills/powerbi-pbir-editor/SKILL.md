@@ -12,7 +12,8 @@ Use this skill when you need to programmatically add or modify visuals in a Powe
 ## ⚠️ GOLDEN RULES TO AVOID EMPTY VISUALS IN PBIR 2.0.0+
 
 1. **Folder Structure:** Visuals must be saved in individual folders under the `visuals/` subfolder. Example: `pages/{page-guid}/visuals/{visual-guid}/visual.json`. Do not save them loose in the page folder.
-2. **Correct JSON Format:** Do not put `projections`, `filters`, or `query` on the root of `visual.json` or directly under `visual`. Projections must reside strictly inside `visual.query.queryState`:
+2. **REQUIRED `name` Property at Root (CRITICAL):** Each `visual.json` MUST include a `name` property at root level matching its folder name (e.g., `"vis_00"`), 1-50 chars. Without it Power BI throws: *"La propiedad necesaria 'name' no se incluyó en la propiedad root"*.
+3. **Correct JSON Format:** Do not put `projections`, `filters`, or `query` on the root of `visual.json` or directly under `visual`. Projections must reside strictly inside `visual.query.queryState`:
    ```json
    "visual": {
      "visualType": "treemap",
@@ -27,7 +28,7 @@ Use this skill when you need to programmatically add or modify visuals in a Powe
      "visualContainerObjects": {}
    }
    ```
-3. **Column vs Measure (CRITICAL):** Grouped charts (such as `treemap`, `funnel`, `barChart`, `columnChart`, `pieChart`, `donutChart`, `lineChart`, etc.) **DO NOT accept direct columns (`"Column"`) in their values projection (`Y` or `Values`)**. If you attempt to use a column directly in the Y-axis/Values axis, the visual will render as an **empty rectangle** in Power BI Desktop showing the "Select or drag fields" warning.
+4. **Column vs Measure (CRITICAL):** Grouped charts (such as `treemap`, `funnel`, `barChart`, `columnChart`, `pieChart`, `donutChart`, `lineChart`, etc.) **DO NOT accept direct columns (`"Column"`) in their values projection (`Y` or `Values`)**. If you attempt to use a column directly in the Y-axis/Values axis, the visual will render as an **empty rectangle** in Power BI Desktop showing the "Select or drag fields" warning.
    - **Solution:** You must first create a DAX measure (`measure`) in the corresponding `.tmdl` file (using the `add_measure_to_tmdl` tool or modifying it directly), for example: `measure 'Average Service' = AVERAGE(table[service])`.
    - **Reference:** In the visual JSON, point to that measure using the `"Measure"` projection type (not `"Column"`):
      ```json
@@ -141,6 +142,7 @@ To set visual titles programmatically in `visualContainer` format:
 ---
 
 ## 5. TMDL Model & Measure Rules
+* **TMDL Comments (CRITICAL):** TMDL only supports `//` for single-line comments. **NEVER use `--` (SQL-style double-dash)** — the TMDL parser will throw `InvalidLineType: Other` at the comment line. Power BI Desktop will fail to load with *"Error de formato TMDL: Tipo de línea inesperado: Other"*. If you must comment, omit comments entirely or use `//`.
 * **discourageImplicitMeasures Setting (CRITICAL):** If the model defines any Calculation Group (`calculationGroup`), you **MUST** set the property `discourageImplicitMeasures: true` under `model Model` in `model.tmdl`. Failure to do so will result in a load crash in Power BI Desktop.
 * **Avoid isKey on Dimensions (CRITICAL):** Do not add `isKey: true` to primary key columns of standard import tables (like date or dimension tables). It can cause *"a cyclic reference was found during evaluation"* errors in Power Query. Use model-level relationships to map the keys.
   - **Transient Evaluation Cache Bug:** Even when the model schema is 100% correct, Power BI Desktop may occasionally display a false-positive *"Se encontró una referencia cíclica durante la evaluación"* (A cyclic reference was found during evaluation) error on first open or first refresh due to a corrupted memory cache in the engine. This is a known Power BI bug. **Solution:** Tell the user to simply click the **Actualizar (Refresh)** button a second time, or close and reopen Power BI Desktop. The second load always completes successfully.
