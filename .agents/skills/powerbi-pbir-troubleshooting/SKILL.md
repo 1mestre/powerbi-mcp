@@ -101,11 +101,11 @@ When configuring a `barChart` or `columnChart`, Power BI Desktop defaults to ren
 1. **`CustomVisualNotFound` Error:** Power BI treats R (`rVisual`) controls as external extension packages that require internal package GUIDs in `report.json` / `StaticResources`.
 2. **Dark Blank Box:** Python (`pythonVisual`) script controls generated purely via code without UI binding fail to initialize the C++ / Python IPC bridge in Power BI Desktop's rendering canvas, drawing a dark empty box.
 
-### 2.8 `activePageName` Metadata Consistency Rule
-When deleting, renaming, or reordering report pages in a PBIR project, **ALWAYS** verify that `"activePageName"` inside `pages.json` points to a valid, existing page name present in the `"pageOrder"` array.
+### 2.9 `scopeId` Selector `Comparison.Right` Literal Syntax Rule
+In PBIR `visual.json` selector definitions for multi-color bar/column charts (`dataPoint`), the `"Right"` property inside `"Comparison"` MUST directly contain the `"Literal"` object **without an outer `"expr"` wrapper**.
 
-* **Symptom:** Power BI Desktop fails to open the report on launch and throws the error *"No se encontró ActivePageName"*.
-* **Fix:** Update `pages.json` so `"activePageName"` matches an active page directory name (e.g., `"39561f9ff71b78171e9c"`).
+* **Incorrect (Throws Schema Validation Errors):** `"Right": { "expr": { "Literal": { "Value": "'Electronics'" } } }`
+* **Correct (Valid PBIR 2.10.0 Schema):** `"Right": { "Literal": { "Value": "'Electronics'" } }`
 
 ---
 
