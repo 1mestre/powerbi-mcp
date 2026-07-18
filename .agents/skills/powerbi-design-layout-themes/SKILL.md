@@ -85,8 +85,9 @@ To draw immediate executive focus to the most critical "North Star" metrics (e.g
 * Use a bright, contrasting color for that border (e.g., `#FF9E2C` / Terracota suave) against the dark theme background.
 * Maintain a darker neutral border (`#2E3F4C` or similar) on secondary cards to keep the visual hierarchy clean.
 
-### 3. Visual Emojis/Symbols in Titles
-Embed clean unicode symbols directly in visual container titles to make them instantly recognizable and visual (e.g., `"⭐ Avg Rating"`, `"💰 Total Revenue"`, `"📂 Filter by Category"`).
+### 3. Visual Emojis/Symbols & Header Banner Titles
+* Embed clean unicode symbols directly in visual container titles to make them instantly recognizable and visual (e.g., `"⭐ Avg Rating"`, `"💰 Total Revenue"`, `"📂 Filter by Category"`).
+* **Header Banner Zero-Overlay Rule:** When using a Card visual container as a top page title banner (`height: 50px`), ALWAYS explicitly set `"labels"` and `"categoryLabel"` properties with `"show": false`, `"fontSize": 1`, and `"transparency": 100` (`color: #1A2A36`) to prevent the underlying metric number from bleeding through or overlaying the title text.
 
 ### 4. Distinct Multi-Color Bar Series & Rounded Container Corners
 * **Rounded Corners (Bordes Redondeados):** NEVER use sharp 90-degree square container borders. ALWAYS set `"radius": { "expr": { "Literal": { "Value": "15D" } } }` inside `"visualContainerObjects.border.properties"` for all KPI Cards, Charts, and Slicers.
