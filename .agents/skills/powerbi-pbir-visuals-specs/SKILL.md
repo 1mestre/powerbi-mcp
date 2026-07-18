@@ -32,9 +32,11 @@ Never use legacy, descriptive, or regional names (e.g., `columnStackedChart` or 
   - `"card"` (single value KPI card)
   - `"multiRowCard"` (multi-row card visual)
   - `"gauge"` (radial gauge)
-* **Advanced:**
+* **Advanced & Custom Analytics:**
   - `"scatterChart"` (scatter / bubble plot)
   - `"slicer"` (slicer controls)
+  - `"pythonVisual"` (Python visual using Matplotlib/Seaborn/Pandas)
+  - `"rVisual"` (R visual using ggplot2/lattice/base R)
 
 ---
 
@@ -318,6 +320,90 @@ To ensure visuals pick up the colors defined in your active report theme JSON au
     ]
   }
   ```
+
+---
+
+## 7. Python & R Visual Specifications (`pythonVisual` & `rVisual`)
+
+Python and R script visuals allow embedding custom Matplotlib/Seaborn and R `ggplot2` code directly into PBIR `visual.json` files.
+
+### 7.1 Python Visual Schema (`pythonVisual`)
+- **`visualType`:** `"pythonVisual"`
+- **Fields / Projections:** Defined in `visual.query.queryState.Values.projections`. Fields become columns in the Python `dataset` DataFrame.
+- **`objects.script`:** Specifies `scriptProvider: 'python'` and `scriptSource` containing the Python code.
+
+```json
+{
+  "visual": {
+    "visualType": "pythonVisual",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": { "Column": { "Expression": { "SourceRef": { "Entity": "amazon_clean" } }, "Property": "actual_price" } },
+              "queryRef": "amazon_clean.actual_price",
+              "nativeQueryRef": "actual_price"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "script": [
+        {
+          "properties": {
+            "scriptProvider": { "expr": { "Literal": { "Value": "'python'" } } },
+            "scriptSource": { "expr": { "Literal": { "Value": "'import matplotlib.pyplot as plt\\nimport seaborn as sns\\nfig, ax = plt.subplots()\\nsns.heatmap(dataset.corr(), ax=ax)\\nplt.show()'" } } }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### 7.2 R Visual Schema (`rVisual`)
+- **`visualType`:** `"rVisual"`
+- **Fields / Projections:** Defined in `visual.query.queryState.Values.projections`. Fields become columns in the R `dataset` data frame.
+- **`objects.script`:** Specifies `scriptProvider: 'r'` and `scriptSource` containing the R code.
+
+```json
+{
+  "visual": {
+    "visualType": "rVisual",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": { "Column": { "Expression": { "SourceRef": { "Entity": "amazon_clean" } }, "Property": "rating" } },
+              "queryRef": "amazon_clean.rating",
+              "nativeQueryRef": "rating"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "script": [
+        {
+          "properties": {
+            "scriptProvider": { "expr": { "Literal": { "Value": "'r'" } } },
+            "scriptSource": { "expr": { "Literal": { "Value": "'library(ggplot2)\\np <- ggplot(dataset, aes(x=rating)) + geom_histogram()\\nprint(p)'" } } }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### 7.3 Multi-Page Registration Workflow
+When adding new report pages (e.g. `page_advanced_analytics`):
+1. Create subfolder `pages/{page_name}/` and `page.json` (schema `page/2.1.0/schema.json`, canvas 1280x980, background color without `show` property).
+2. Append `{page_name}` to `pages.json` under `pageOrder`.
+3. Create `visuals/{visual_name}/visual.json` for each visual in the page.
 
 ---
 

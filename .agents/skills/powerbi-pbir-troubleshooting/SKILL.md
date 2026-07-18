@@ -388,7 +388,6 @@ This schema difference is a common mistake because `visualContainerObjects.backg
 | `visual.json → visualContainerObjects.background` | YES | YES | YES |
 
 
-
 ### 5.5 Safe Theme-Switch Checklist
 
 Execute ALL steps in order. Skipping any step causes partial application:
