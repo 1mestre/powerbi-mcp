@@ -256,16 +256,60 @@ To override default theme colors for individual slices (e.g., coloring specific 
 ```
 
 ### Column & Line Chart Series Coloring
-To set the color of columns or lines explicitly:
-```json
-"objects": {
-  "dataPoint": [
-    {
-      "properties": {
-        "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#007185'" } } } } }
+To set the color of columns or lines explicitly in a single-series visual (without legends):
+- **Column Chart (using `"fill"`):**
+  ```json
+  "objects": {
+    "dataPoint": [
+      {
+        "properties": {
+          "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#007185'" } } } } }
+        }
       }
-    }
-  ]
-}
+    ]
+  }
+  ```
+- **Line Chart (using `"fillColor"`):** Always use `"fillColor"` rather than `"fill"` to customize standard line chart series colors explicitly in the JSON:
+  ```json
+  "objects": {
+    "dataPoint": [
+      {
+        "properties": {
+          "fillColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FF9900'" } } } } }
+        }
+      }
+    ]
+  }
+  ```
+
+---
+
+## 8. Canvas Grid & Layout Framework (Anti-Cramping & Visual Safety)
+To prevent visuals from looking cramped, overlapping, or having low-contrast double labels:
+
+### Layout Metrics & Spacing Grid:
+- **Standard Canvas Dimensions:** Use `1280` (width) x `920` (height) to support vertical scrolling and provide ample breathing room.
+- **Minimum Margins:** Maintain a `20px` margin on the left, right, top, and bottom edges of the canvas.
+- **Minimum Inter-Visual Spacing (Gaps):** Maintain at least `15px` of spacing vertically and horizontally between adjacent visual blocks.
+- **Visual Heights:**
+  - **KPI Cards:** Height must be **at least `90px`** (recommended: `95px`). Anything below will cramp the text.
+  - **Charts:** Height must be **at least `260px`** (recommended: `280px`) to prevent axis/legend overlaps.
+  - **Tables:** Height must be **at least `220px`** (recommended: `240px`) to allow scroll-free visibility.
+  - **Slicers:** Height must be **at least `100px`** (recommended: `110px`).
+
+### KPI Card Styling Rules (No Overlapping Text):
+- **Hide Category Label:** Always set `"categoryLabel"` properties: `show: false`.
+- **Fail-safe Category Label Color Matching:** Set `"categoryLabel"` property `"color"` to the **exact same hex code as the card's background color**. This ensures that even if Power BI ignores the `show: false` instruction and renders the label, it remains completely invisible to the user.
+- **Text Sizing:** Title size: `9pt` or `10pt`. Callout value size: `20pt` to `24pt`.
+
+### Layout Validation Script:
+Before compiling report pages, run a validation script to programmatically assert coordinate boundaries and prevent overlaps.
+```python
+# Check overlaps between any two visuals A and B
+x_overlap = not (A.x + A.width <= B.x or B.x + B.width <= A.x)
+y_overlap = not (A.y + A.height <= B.y or B.y + B.height <= A.y)
+if x_overlap and y_overlap:
+    raise ValueError("Visual overlap detected!")
 ```
+
 
