@@ -255,32 +255,24 @@ if os.path.exists(cache_path):
     print("cache.abf deleted")
 ```
 
-### 5.2 Trap 2 — New Theme File Name Not Resolved
+### 5.2 Trap 2 — New Theme File Name Not Resolved & Custom Theme Crash
+If you create a NEW theme file (e.g., `SlateAndTerracotta.json` or `TerracottaDark.json` inside a custom `staticResources` folder) and reference it in `report.json`, Power BI Desktop will fail to resolve the resources package and crash on launch showing *"No se pudo cargar el informe"*. Power BI's internal theme engine has strict resolution restrictions on custom resource packages in PBIP.
 
-If you create a NEW theme file (e.g., `SlateAndTerracotta.json`) and reference it in `report.json`, PBID may silently fall back to the default theme or the previous theme. PBID's theme resolver has issues resolving theme names that were never previously registered in the report session.
-
-**NEVER create a new theme file. ALWAYS overwrite the existing theme file in `definition/BaseThemes/`**, keeping the same filename and the same `"name"` field inside the JSON. Only replace the color values:
+**NEVER create a new theme file. ALWAYS overwrite the default system theme file (e.g. `StaticResources/SharedResources/BaseThemes/CY26SU05.json` or `definition/BaseThemes/DarkNavy.json`), maintaining the exact filename and internal `"name"` key, replacing only the internal property values:**
 
 ```python
+# Correct approach: Overwrite default theme in-place
 import json
-
-theme_path = r"MyReport.Report\definition\BaseThemes\DarkNavy.json"
-
+theme_path = r"Spotify.Report\StaticResources\SharedResources\BaseThemes\CY26SU05.json"
 with open(theme_path, "r", encoding="utf-8") as f:
     theme = json.load(f)
-
-# Replace colors IN PLACE — do NOT rename the file or change theme["name"]
-theme["dataColors"] = [
-    "#C0392B", "#E67E22", "#F1C40F",
-    "#27AE60", "#2980B9", "#8E44AD",
-    "#16A085", "#D35400"
-]
-theme["background"] = "#1C2B3A"
-theme["foreground"] = "#ECF0F1"
-
+theme["name"] = "CY26SU05" # Keep original name
+theme["dataColors"] = ["#D99B7F", "#A56F63", "#3B82F6"] # Replace with custom colors
 with open(theme_path, "w", encoding="utf-8") as f:
     json.dump(theme, f, indent=2, ensure_ascii=False)
 ```
+
+---
 
 ### 5.3 Trap 3 — `dataColors` Do Not Propagate to Pre-Rendered Charts
 
