@@ -12,6 +12,9 @@ Use this skill when appending DAX measures, editing model properties, or modifyi
 ## 1. TMDL Syntax & Comments Rules
 
 * **TMDL Comments (CRITICAL):** TMDL only supports `//` for single-line comments. **NEVER use `--` (SQL-style double-dash)** — the TMDL parser will throw `InvalidLineType: Other` at the comment line. Power BI Desktop will fail to load with *"Error de formato TMDL: Tipo de línea inesperado: Other"*. If you must comment, omit comments entirely or use `//`.
+* **TMDL Indentation & Spaces (CRITICAL):** TMDL is extremely sensitive to tabs vs spaces. **NEVER mix spaces and tabs** in any `.tmdl` file. 
+  - In `model.tmdl`, references to tables (`ref table TableName`) and cultures (`ref cultureInfo es-ES`) **MUST reside at the root level (no indentation, 0 leading whitespace)**. Indenting `ref table` lines with a space or tab will cause a parser crash showing: *"Error de formato TMDL: Tipo de error de análisis: InvalidLineType - Tipo de línea inesperado: ReferenceObject"* on `./model`.
+  - In table partition source blocks, indent code lines strictly using clean tab characters (`\t`) with no mixed trailing spaces.
 * **Double-Quoting Format Strings:** If `formatString` contains spaces, currencies, or symbols, **always** enclose it in double quotes:
   - `formatString: "$#,##0"` (Correct)
   - `formatString: $#,##0` (Incorrect - will crash Power BI on open)
