@@ -143,6 +143,25 @@ ACCENT_TEAL = "#00B4D8"   # Teal accent for data series
 
 ---
 
+## 7. SVG Vector Icons & Dynamic Graphic Measure Rendering (CRITICAL)
+
+To embed crisp, scalable vector graphics (SVGs), custom icons (boxes, clocks, search icons, user profiles), or custom badges directly into Power BI without using external image files or low-resolution raster images:
+
+### 1. Vector SVG Data URI Format in DAX Measures
+Construct DAX measures returning `data:image/svg+xml;utf8,...` string URIs. Set the measure's **Data Category** to `Image URL` (`imageUrl`).
+
+```dax
+measure 'SVG_Clock_Icon' = 
+"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D99B7F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>"
+```
+
+### 2. Key SVG Encoding Rules in DAX:
+* **URL-Encode Color Hashes:** Hex color `#` characters MUST be URL-encoded as `%23` inside the SVG string (e.g. `stroke='%23D99B7F'`). Using unencoded `#` will cause Power BI to render a broken image icon.
+* **Single Quotes for Attributes:** Use single quotes `'` for SVG XML attributes (`fill='none'`, `stroke='...'`) to avoid escaping double-quotes in DAX.
+* **Binding to Visual Containers:** Bind SVG measures to HTML Content custom visuals, Matrix/Table columns, or Card visuals with image support.
+
+---
+
 ## 🔗 RELATED SKILLS & REPOSITORY FILES
 
 - 🏠 **[powerbi-pbir-editor](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-pbir-editor/SKILL.md)** - Master Skill Hub
