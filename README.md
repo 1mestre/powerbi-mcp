@@ -1,60 +1,72 @@
 # Power BI Desktop Local MCP Server
 
-A Model Context Protocol (MCP) server that enables AI assistants (such as Claude Desktop, Cursor, Cline, Hermes, and others) to securely and dynamically connect to locally running **Power BI Desktop** instances in Windows.
+A **Model Context Protocol (MCP) server** that gives AI assistants (Claude Desktop, Cursor, Cline, Hermes, and others) direct, programmatic access to locally running **Power BI Desktop** instances on Windows.
 
-Through this server, an LLM can discover open reports, inspect table and column schema (metadata), and execute custom DAX queries to interact with your data or generate visualizations dynamically.
+The agent can discover open reports, inspect the semantic model schema, execute arbitrary DAX queries, write DAX measures permanently to TMDL files, and — new in this version — **generate fully custom HTML visualizations** using live data from the model, ready to drop into Power BI's native *HTML Content* visual.
 
 ---
 
-## INSTALL THE MCP FOR YOUR AI AGENT WITH THIS PROMPT
+## ⚡ Quick Install Prompt
 
-Copy and paste this prompt when starting a new session with Cursor, Cline, Claude Desktop, or Hermes to have the agent configure the environment and understand the workflow automatically:
+Copy and paste this into a new session with your AI agent to auto-configure the environment:
 
 ```
 1. **Dependency Installation:** If the `.venv/` directory does not exist, initialize a Python virtual environment (`python -m venv .venv`), activate it, and install all dependencies declared in `requirements.txt`.
 2. **Skill Registration:** Copy the `.agents/skills/powerbi-pbir-editor` customizations directory to your local global skills directory (e.g., in Hermes: `C:\Users\{User}\AppData\Local\hermes\skills\`).
 3. **MCP Server Registration:** Register the `powerbi-local` MCP server in your global configuration file (e.g., in Hermes: `config.yaml`, in Cursor/Cline: `mcpjson.json`).
-   - **CRITICAL:** Configure the command pointing to the Python executable of the local virtual environment (`.venv/Scripts/python.exe`) and the arguments pointing to the `launch.py` script of this repository. This prevents sys.path conflicts (PYTHONPATH pollution) when importing the `mcp` library.
-4. **Understanding Your Capabilities (CRITICAL):** Do not assume you cannot create report pages or visuals programmatically just because the MCP tools don't have visual creation functions. You have full filesystem write access. You can and should create new pages and visuals by creating directories in the `.Report/definition/pages/` folder and writing `visual.json` files in their `visuals/` subfolders according to the `powerbi-pbir-editor` skill rules. Never tell the user you cannot create visuals; you can always write files.
-5. **Next Steps (Request from Human):** Once the installation is complete, present the following next steps to the human to proceed:
+   - **CRITICAL:** Configure the command pointing to the Python executable of the local virtual environment (`.venv/Scripts/python.exe`) and the arguments pointing to the `launch.py` script. This prevents sys.path conflicts (PYTHONPATH pollution) when importing the `mcp` library.
+4. **Understanding Your Capabilities (CRITICAL):** Do not assume you cannot create report pages or visuals programmatically. You have full filesystem write access. You can create new pages and visuals by writing `visual.json` files in the `.Report/definition/pages/{page-guid}/visuals/{visual-name}/` folder according to the `powerbi-pbir-editor` skill rules. For HTML-rendered charts, use the `generate_html_visual` tool and place the output inside an HTML Content visual. Never tell the user you cannot create visuals.
+5. **Next Steps (Request from Human):** Once installation is complete:
    - "I have successfully installed and configured the Power BI MCP server and skills."
    - "Please open Power BI Desktop with your project."
-   - "Provide me with the absolute path to your `.pbip` file and the name of the table you want to work with so I can start modeling and generating charts."
+   - "Provide me with the absolute path to your `.pbip` file and the name of the table you want to work with."
 ```
 
 ---
 
-## Key Features
+## 🔧 Key Features
 
-- **Dynamic Port Discovery:** Power BI Desktop spins up a local instance of SQL Server Analysis Services (SSAS) and assigns it a random port every session. This server automatically scans Windows `AppData` directories to identify active workspace sessions and resolve their local ports.
-- **Robust Connection via ADOMD.NET:** Instead of relying on local system OLE DB providers (`MSOLAP`) which often suffer from architecture mismatches (32-bit vs. 64-bit) or missing drivers, this server leverages `pythonnet` to directly load the native `Microsoft.PowerBI.AdomdClient.dll` shipped with Power BI Desktop.
-- **Schema Inspection:** Exposes database schema, detailing tables, columns, data types, and visibility states.
-- **JSON-Safe DAX Execution:** Executes complex DAX expressions (e.g., `EVALUATE SUMMARIZECOLUMNS(...)`) and parses raw .NET data types (decimals, dates, nulls) into clean, JSON-serializable structures.
-- **Self-Sanitizing Environment:** Automatically isolates its environment from host platforms (such as AI agent runners or global shells) by clearing contaminated `PYTHONPATH`/`PYTHONHOME` environment variables and prioritizing the local `.venv` directory to prevent runtime dependency import issues (e.g., `pywintypes` or `pythonnet` collision).
-
----
-
-## Project Structure
-
-- `pbi_connector.py`: Core database connector utilizing ADOMD.NET client libraries and local active port scanning.
-- `server.py`: Entry point for the MCP server built with the high-level `FastMCP` framework.
-- `requirements.txt`: Python package dependencies.
-- `launch.py`: Sanitizing wrapper to run the server without PYTHONPATH collision.
+| Feature | Description |
+|---|---|
+| **Dynamic Port Discovery** | Power BI Desktop assigns a random local SSAS port every session. This server auto-scans `AppData` to find and resolve active ports. |
+| **ADOMD.NET Connection** | Uses `pythonnet` to load the native `Microsoft.PowerBI.AdomdClient.dll` shipped with Power BI Desktop — no MSOLAP driver conflicts. |
+| **Schema Inspection** | Reads full semantic model metadata: tables, columns, data types, visibility. |
+| **JSON-Safe DAX Execution** | Runs `EVALUATE SUMMARIZECOLUMNS(...)` and similar, converting .NET decimals, dates, and nulls to clean Python/JSON types. |
+| **TMDL Measure Writer** | Writes DAX measures directly to `.tmdl` files so they persist across Power BI sessions. |
+| **HTML Visual Generator** | Generates self-contained HTML charts (bar, donut, KPI, clustered bar, stacked column, line, table) from live DAX data — inspired by the [Power-BI-Visuals-Using-Claude-AI-HTML-DAX](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX) project. |
+| **Self-Sanitizing Environment** | Clears `PYTHONPATH`/`PYTHONHOME` at startup to prevent host-environment collisions with `pywintypes` or `pythonnet`. |
 
 ---
 
-## Prerequisites
+## 📁 Project Structure
 
-1. **Operating System:** Windows (required to run Power BI Desktop and load the native Windows .NET Assemblies).
-2. **Python:** Version 3.10 or higher.
-3. **Power BI Desktop:** Installed standard edition (`C:\Program Files\Microsoft Power BI Desktop`) or Microsoft Store edition.
+```
+desktop-ssas-mcp/
+├── server.py            # MCP server – all 5 tools registered here
+├── pbi_connector.py     # ADOMD.NET connector + active port scanner
+├── html_generators.py   # HTML visual generators (DAX+HTML pattern)
+├── launch.py            # Sanitizing launcher wrapper
+├── create_dashboard.py  # Standalone Plotly dashboard (browser preview)
+├── fix_tmdl_format.py   # Utility: fix unquoted formatString values in TMDL
+├── test_adomd.py        # Standalone connection test script
+├── requirements.txt     # Python dependencies
+└── .agents/             # AI agent skills (powerbi-pbir-editor, etc.)
+```
 
 ---
 
-## Installation & Setup Step-by-Step
+## 📋 Prerequisites
 
-### 1. Clone & Set Up Workspace
-Navigate to the directory and run:
+1. **OS:** Windows (required for Power BI Desktop and .NET assembly loading)
+2. **Python:** 3.10 or higher
+3. **Power BI Desktop:** Standard edition (`C:\Program Files\Microsoft Power BI Desktop`) or Microsoft Store edition
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Clone & Set Up Virtual Environment
+
 ```powershell
 # Create virtual environment
 python -m venv .venv
@@ -62,38 +74,62 @@ python -m venv .venv
 # Activate virtual environment
 .\.venv\Scripts\Activate.ps1
 
-# Install requirements
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Standalone Test
-With Power BI Desktop open containing a loaded dataset:
+### 2. Test the Connection
+
+With Power BI Desktop open and a dataset loaded:
+
 ```powershell
 fastmcp run server.py
 ```
 
-### 3. Register MCP Server in client (Cursor, Cline, Claude Desktop, Hermes)
-Add the following block to your MCP config file (e.g. `C:\Users\{User}\AppData\Local\hermes\config.yaml` or `C:\Users\{User}\AppData\Roaming\Cursor\User\globalStorage\moe.etherelf.container\mcpjson.json`):
+Or run the standalone test:
+
+```powershell
+.\.venv\Scripts\python.exe test_adomd.py
+```
+
+### 3. Register the MCP Server in Your AI Client
+
+#### Hermes (`config.yaml`)
 
 ```yaml
-# yaml format (Hermes config.yaml)
 mcp_servers:
   powerbi-local:
-    command: C:/Users/{User}/powerbi-mcp/.venv/Scripts/python.exe
+    command: C:/Users/{User}/desktop-ssas-mcp/.venv/Scripts/python.exe
     args:
-      - C:/Users/{User}/powerbi-mcp/launch.py
+      - C:/Users/{User}/desktop-ssas-mcp/launch.py
     connect_timeout: 30
     timeout: 120
 ```
 
+#### Cursor / Cline (`mcpjson.json`)
+
 ```json
-// json format (Cursor / Cline config)
 {
   "mcpServers": {
     "powerbi-local": {
-      "command": "C:\\Users\\{User}\\powerbi-mcp\\.venv\\Scripts\\python.exe",
+      "command": "C:\\Users\\{User}\\desktop-ssas-mcp\\.venv\\Scripts\\python.exe",
       "args": [
-        "C:\\Users\\{User}\\powerbi-mcp\\launch.py"
+        "C:\\Users\\{User}\\desktop-ssas-mcp\\launch.py"
+      ]
+    }
+  }
+}
+```
+
+#### Claude Desktop (`claude_desktop_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "powerbi-local": {
+      "command": "C:\\Users\\{User}\\desktop-ssas-mcp\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\{User}\\desktop-ssas-mcp\\launch.py"
       ]
     }
   }
@@ -102,103 +138,193 @@ mcp_servers:
 
 ---
 
-## ⚠️ GOLDEN RULES FOR HUMAN AND AI AGENTS (PBIR 2.0.0+ / TMDL)
+## 🛠 MCP Tools Reference
 
-When creating or modifying Power BI report pages or semantic models programmatically, you must follow these rules strictly. Failure to do so will result in **empty visual placeholders**, **evaluation loops**, or **report loading crashes**.
+### `list_instances()`
 
-### 1. Folder Structure for Visuals (PBIR 2.0.0+)
-In modern Power BI projects, visual files **must not** be placed directly in the page folder. They must be organized inside a `visuals/` subfolder, where each visual is its own directory containing a `visual.json` file:
+Scans local AppData for active Power BI Desktop SSAS workspaces.
+
+**Returns:** `[{"path": "...", "port": "12345"}, ...]`
+
+---
+
+### `get_schema(port)`
+
+Retrieves the full semantic model schema from the specified port.
+
+**Args:**
+- `port` — from `list_instances()`
+
+**Returns:** `[{"Name": "TableName", "Columns": [{"Name": "col", "DataType": "String", "IsHidden": false}]}, ...]`
+
+---
+
+### `execute_dax(port, query)`
+
+Executes a DAX query and returns clean JSON-serializable results.
+
+**Args:**
+- `port` — from `list_instances()`
+- `query` — DAX string, e.g. `EVALUATE SUMMARIZECOLUMNS('Sales'[Country], "Total", SUM('Sales'[Amount]))`
+
+**Returns:** `[{"Sales[Country]": "Mexico", "Total": 125000.0}, ...]`
+
+---
+
+### `add_measure_to_tmdl(tmdl_path, name, expression, format_string?)`
+
+Writes a new DAX measure directly to a `.tmdl` semantic model file, inserting it before the `partition` block (or at end of file). Validates for duplicates before writing.
+
+**Args:**
+- `tmdl_path` — absolute path to the table `.tmdl` file
+- `name` — measure name (e.g. `"Total Sales"`)
+- `expression` — DAX formula (e.g. `SUM('Sales'[Amount])`)
+- `format_string` *(optional)* — e.g. `"$#,##0"`
+
+**Returns:** Success or error string.
+
+---
+
+### `generate_html_visual(port, query, chart_type, label_key, value_key, ...)`
+
+**The core integration with the [Fasaclox HTML+DAX pattern](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX).**
+
+Executes a DAX query, generates a self-contained HTML visual from the results, and optionally writes it as a DAX measure to a `.tmdl` file. The resulting HTML can be placed in Power BI's **HTML Content** visual (by Daniel Marsh-Patrick) for fully custom, interactive-style charts.
+
+**Supported `chart_type` values:**
+
+| `chart_type` | Description |
+|---|---|
+| `"bar"` | Horizontal gauge-style bar chart |
+| `"donut"` | SVG donut / ring chart with legend |
+| `"kpi"` | KPI card with attainment % and progress bar |
+| `"clustered_bar"` | Multi-series clustered horizontal bar chart |
+| `"stacked_column"` | Vertical stacked column chart (SVG) |
+| `"line"` | SVG polyline line / time-series chart |
+| `"table"` | Styled HTML table with optional zebra striping |
+
+**Key Args:**
+- `port` — SSAS port from `list_instances()`
+- `query` — DAX EVALUATE query
+- `chart_type` — see table above
+- `label_key` — column name for labels / X-axis categories
+- `value_key` — column name for the primary numeric value
+- `title` — chart title string
+- `series_json` — JSON array for multi-series charts: `'[{"key":"Sales","label":"Net Sales","color":"#3b82f6"}]'`
+- `value_prefix` / `value_suffix` — e.g. `"$"` or `" units"`
+- `value_decimals` — decimal places in value labels
+- `color` — primary colour for single-series charts (hex)
+- `tmdl_path` *(optional)* — if set alongside `measure_name`, the HTML is written as a DAX measure
+- `measure_name` *(optional)* — name for the TMDL measure
+
+**Returns:**
+```json
+{
+  "html": "<style>...</style><div>...</div>",
+  "chart_type": "bar",
+  "row_count": 12,
+  "tmdl_result": "Successfully added measure 'Sales by Country' to Sales.tmdl"
+}
+```
+
+#### Example Agent Workflow — HTML Bar Chart
+
+```
+1. list_instances()                     → port = "54321"
+2. get_schema("54321")                  → find table "Sales", columns "Country", "Amount"
+3. generate_html_visual(
+     port="54321",
+     query='EVALUATE SUMMARIZECOLUMNS("Sales"[Country], "Total", SUM("Sales"[Amount]))',
+     chart_type="bar",
+     label_key="Country",
+     value_key="Total",
+     title="Sales by Country",
+     value_prefix="$",
+     value_decimals=0,
+     color="#10b981",
+     tmdl_path="C:/path/Sales.SemanticModel/definition/tables/Sales.tmdl",
+     measure_name="HTML Sales by Country"
+   )
+   → returns html + writes measure to TMDL
+4. Add "HTML Content" visual to report page
+5. Bind measure "HTML Sales by Country" to the visual's Values field
+```
+
+---
+
+## 📊 HTML Visual Design System (`html_generators.py`)
+
+All HTML visuals share a consistent design language:
+
+- **Font:** Segoe UI (native Power BI font — no external loading)
+- **Colors:** Professional Tailwind-inspired palette (`#3b82f6` blue, `#10b981` green, `#ef4444` red, `#f59e0b` amber)
+- **CSS:** Fully inlined, scoped with short class names — no conflicts inside the HTML Content iframe sandbox
+- **No dependencies:** Pure HTML + CSS + inline SVG — no external CDN, no JavaScript frameworks
+- **Responsive:** Flex layouts that adapt to the visual container width
+
+---
+
+## ⚠️ Golden Rules for AI Agents (PBIR 2.0.0+ / TMDL)
+
+### 1. PBIR Folder Structure for Visuals
+
+Each visual must live in its own subfolder inside `visuals/`:
+
 ```
 {project}.Report/
   definition/
     pages/
-      {page-guid}/
+      {20-char-hex-page-id}/
         page.json
         visuals/
           {visual-name}/
             visual.json
 ```
 
-### 2. Visual JSON Structure (visualContainer Schema)
-Projections and fields must be structured directly under `visual.query.queryState` (never on the root of `visual.json` or directly under `visual`).
+### 2. HTML Content Visual — Binding the HTML Measure
 
-Example visual configuration (`visual.json`):
-```json
-{
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
-  "name": "treemap-service",
-  "position": { "x": 20, "y": 20, "z": 0, "width": 610, "height": 310, "tabOrder": 0 },
-  "visual": {
-    "visualType": "treemap",
-    "query": {
-      "queryState": {
-        "Group": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
-                  "Property": "nse"
-                }
-              },
-              "queryRef": "comidasrapidas.nse",
-              "nativeQueryRef": "nse"
-            }
-          ]
-        },
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": { "SourceRef": { "Entity": "comidasrapidas" } },
-                  "Property": "Promedio Servicio"
-                }
-              },
-              "queryRef": "comidasrapidas.Promedio Servicio",
-              "nativeQueryRef": "Promedio Servicio"
-            }
-          ]
-        }
-      }
-    },
-    "drillFilterOtherVisuals": true,
-    "objects": {},
-    "visualContainerObjects": {
-      "title": [
-        {
-          "properties": {
-            "show": { "expr": { "Literal": { "Value": "true" } } },
-            "text": { "expr": { "Literal": { "Value": "'Service by NSE'" } } }
-          }
-        }
-      ]
-    }
-  }
-}
-```
+To display a generated HTML visual in Power BI:
+1. Add the **HTML Content** visual (by Daniel Marsh-Patrick) to the report page via AppSource.
+2. In `visual.json`, set `"visualType": "htmlContent"` (or whichever identifier the visual uses).
+3. Bind the DAX measure that returns the HTML string to the visual's `Values` field.
+4. The visual renders the HTML inside a sandboxed iframe — no external script loading allowed.
 
-### 3. Column vs Measure Rule (CRITICAL)
-- **Bar/Column/Line/Combo/Funnel/Pie/Donut Charts** and **Treemaps** **DO NOT** accept direct columns (`"Column"`) on their Y-axis/Values axis. Doing so will result in an **empty visual** showing the "Select or drag fields" warning.
-- **Fix:** You must first define a DAX measure in the table's `.tmdl` file (using the MCP tool `add_measure_to_tmdl`), and reference it as a `"Measure"` projection in the visual JSON.
-- **Table Visuals (`tableEx`):** Direct column references are allowed in table visual projections (`"Values"` channel).
+### 3. Column vs. Measure Rule (CRITICAL)
+
+Bar, column, line, combo, pie, donut charts, and treemaps **do not accept raw columns** on their value axis. Always define a DAX measure first via `add_measure_to_tmdl`, then reference it as a `"Measure"` projection in `visual.json`.
+
+**Exception:** Table visuals (`tableEx`) accept direct column references.
 
 ### 4. Projection Keys by Chart Type
-- **Bar, Column, Line, Combo, Funnel, Pie, Donut:** Use `"Category"` (grouping) and `"Y"` (values/measure).
-- **Treemaps:** Use `"Group"` (grouping) and `"Values"` (measure/size).
-- **Tables (`tableEx`):** Use `"Values"` (array of column projections).
 
-### 5. TMDL Model Rules (CRITICAL FOR CALCULATION GROUPS)
-- **discourageImplicitMeasures Setting:** If you create any Calculation Group (`calculationGroup`) in your model, you **MUST** add `discourageImplicitMeasures: true` under the `model Model` block in `model.tmdl`. If you omit this, Power BI Desktop will fail to load with a Frown crash indicating that implicit measures must be discouraged.
-- **Avoid isKey Property on Dimensions:** Never add `isKey: true` to primary key columns in standard import dimensions (like date or category dimensions). Setting `isKey: true` in TMDL can trigger a *"cyclic reference was found during evaluation"* error in Power Query. Keep the column definition simple and let the model-level relationships handle cardinality.
-- **Double-Quoting Format Strings:** If `formatString` contains spaces, currencies, or symbols, **always** enclose it in double quotes: `formatString: "$#,##0"` (Correct). Unquoted strings with symbols will crash Power BI.
-- **Prevent duplicates:** Scan the `.tmdl` file before inserting any measure to avoid compiling duplicate names.
+| Chart Type | Category key | Value key |
+|---|---|---|
+| Bar, Column, Line, Combo, Pie, Donut | `"Category"` | `"Y"` |
+| Treemap | `"Group"` | `"Values"` |
+| Table (`tableEx`) | — | `"Values"` |
 
-### 6. Workflow & Cache Rules (CRITICAL)
-- **Close Power BI Before Edits:** You **MUST** run `taskkill /IM PBIDesktop.exe /F` **BEFORE** making any changes to `.Report` or `.SemanticModel` files (TMDL/PBIR). If Power BI Desktop is open, it holds the files in memory and will overwrite any local disk changes upon close or save.
-- **Clear Schema Cache:** If you perform a major schema refactoring (e.g. splitting a flat table into a Star Schema), you **MUST** delete the local database cache file `.SemanticModel/.pbi/cache.abf`. If you leave it, Power BI Desktop will load conflicting cached metadata and trigger cyclic evaluation or dependency loop errors.
-- **Root Git Repositories:** Ensure no `.git` folder exists in `C:\` or `D:\` roots. This causes Power BI's automatic Git integration to try to write a `.gitignore` to the root drive, triggering an access permission crash.
-- **Valid JSON Keys:** In `visual.json`, never write `"size"`, `"config"`, or `"filters"` on the root object. All dimensions must reside strictly inside `"position"`.
-- **Mandatory Keys:** Every field projection must contain `"queryRef"` and `"nativeQueryRef"`.
-- **Page Folder Names:** Page folders under `pages/` must be named using 20-character lowercase hexadecimal strings or GUIDs. Do not use descriptive folder names.
+### 5. TMDL Rules
 
+- **Calculation Groups:** Adding any `calculationGroup` requires `discourageImplicitMeasures: true` in `model.tmdl`.
+- **No `isKey: true`** on import dimension columns — causes cyclic reference errors in Power Query.
+- **Double-quote `formatString`:** Always: `formatString: "$#,##0"` — unquoted symbols crash Power BI.
+- **Duplicate check:** Scan the `.tmdl` file before inserting any measure.
+- **Indentation:** Match the file's existing indentation (tabs vs. 2-space).
+
+### 6. Workflow & Cache Rules
+
+- **Close Power BI before edits:** Run `taskkill /IM PBIDesktop.exe /F` before modifying `.Report` or `.SemanticModel` files. An open instance will overwrite local changes.
+- **Clear cache after major refactoring:** Delete `.SemanticModel/.pbi/cache.abf` after star-schema restructures or large model changes to avoid cached metadata conflicts.
+- **No `.git` at drive root:** A `.git` folder at `C:\` or `D:\` causes Power BI's Git integration to crash with a permissions error.
+- **Valid `visual.json` keys:** Never put `"size"`, `"config"`, or `"filters"` at the root — all dimensions go inside `"position"`.
+- **Mandatory projection fields:** Every field projection must contain `"queryRef"` and `"nativeQueryRef"`.
+- **Page folder names:** Must be 20-character lowercase hex strings or GUIDs — not descriptive names.
+
+---
+
+## 🔗 Credits & References
+
+- [Power-BI-Visuals-Using-Claude-AI-HTML-DAX](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX) — Fasaclox — pattern for DAX measures that return HTML strings for use in the HTML Content visual
+- [HTML Content Visual](https://appsource.microsoft.com/en-us/product/power-bi-visuals/WA104380985) — Daniel Marsh-Patrick — the Power BI custom visual that renders HTML measures
+- [Model Context Protocol](https://modelcontextprotocol.io) — Anthropic — open standard for tool-equipped AI agents
+- [FastMCP](https://github.com/jlowin/fastmcp) — high-level Python framework for building MCP servers
