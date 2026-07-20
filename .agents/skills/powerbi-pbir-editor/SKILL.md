@@ -1,6 +1,6 @@
 ---
 name: powerbi-pbir-editor
-description: Master hub and workflow rules for programmatically editing Power BI Projects (PBIR format) and TMDL measure files.
+description: Master hub and workflow rules for programmatically editing Power BI Projects (PBIR format), TMDL measure files, and generating HTML visual measures via the generate_html_visual MCP tool.
 ---
 
 # Power BI PBIR & TMDL Developer Skill (Master Hub)
@@ -82,13 +82,53 @@ This master skill is connected with four specialized sub-skills for fast and foc
 
 ---
 
-## 💻 REPOSITORY TOOLS & SCRIPTS INTEGRATION
+## 💻 MCP TOOLS — FULL REFERENCE (5 TOOLS)
 
-The following local tools in this repository extend and automate Power BI development:
+All tools are registered in **[server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py)** and available via the `powerbi-local` MCP server.
 
-* 🔌 **[pbi_connector.py](file:///C:/Users/Sebas/desktop-ssas-mcp/pbi_connector.py)** - Python connector using ADOMD.NET to scan local ports and run DAX queries directly against active Power BI Desktop SSAS instances.
-* ⚡ **[server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py)** - FastMCP server exposing live Power BI tools (`list_databases`, `get_schema`, `execute_dax`).
-* 📈 **[create_dashboard.py](file:///C:/Users/Sebas/desktop-ssas-mcp/create_dashboard.py)** - Script illustrating DAX query execution, Plotly dark dashboard rendering, and data extraction.
-* 🛠️ **[fix_tmdl_format.py](file:///C:/Users/Sebas/desktop-ssas-mcp/fix_tmdl_format.py)** - Regex tool to automatically sanitize unquoted `formatString` entries in `.tmdl` files.
-* 🚀 **[launch.py](file:///C:/Users/Sebas/desktop-ssas-mcp/launch.py)** - Sanitizing launcher script that clears host `PYTHONPATH`/`PYTHONHOME` collisions before booting the MCP server.
-* 📖 **[README.md](file:///C:/Users/Sebas/desktop-ssas-mcp/README.md)** - Full project setup instructions and agent installation prompt.
+| Tool | Purpose |
+|---|---|
+| `list_instances()` | Scan local AppData and return all active Power BI Desktop SSAS ports |
+| `get_schema(port)` | Return full semantic model schema: tables, columns, types, visibility |
+| `execute_dax(port, query)` | Run any DAX EVALUATE query; returns JSON-safe list of row dicts |
+| `add_measure_to_tmdl(tmdl_path, name, expression, format_string?)` | Write a DAX measure permanently to a `.tmdl` file |
+| `generate_html_visual(port, query, chart_type, label_key, value_key, ...)` | **NEW** — Execute DAX + generate HTML visual + optionally write to TMDL |
+
+### `generate_html_visual` — Quick Reference
+
+Inspired by [Power-BI-Visuals-Using-Claude-AI-HTML-DAX (Fasaclox)](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX). Generates self-contained HTML strings for Power BI's **HTML Content** visual.
+
+**Supported `chart_type` values:** `"bar"`, `"donut"`, `"kpi"`, `"clustered_bar"`, `"stacked_column"`, `"line"`, `"table"`
+
+**Key parameters:**
+- `port` — from `list_instances()`
+- `query` — DAX EVALUATE string
+- `label_key` / `value_key` — column names from the query result
+- `series_json` — JSON array for multi-series: `'[{"key":"col","label":"Name","color":"#hex"}]'`
+- `tmdl_path` + `measure_name` — if both provided, writes the HTML as a DAX measure to the `.tmdl` file
+
+**Returns:** `{"html": "<style>...</style><div>...", "chart_type": "bar", "row_count": 12, "tmdl_result": "..."}`
+
+**To display in Power BI:** Add the **HTML Content** visual (Daniel Marsh-Patrick, AppSource) to the page. Bind the DAX measure that returns the HTML string to the visual's Values field.
+
+### HTML Visual Types — Available in `html_generators.py`
+
+See **[html_generators.py](file:///C:/Users/Sebas/desktop-ssas-mcp/html_generators.py)** for full implementation:
+
+| Function | Visual |
+|---|---|
+| `gen_bar_chart(data, label_key, value_key, title, color, ...)` | Horizontal gauge bar chart |
+| `gen_donut_chart(data, label_key, value_key, title, colors)` | SVG donut ring chart with legend |
+| `gen_kpi_card(value, target, label, ...)` | KPI attainment card with progress bar |
+| `gen_clustered_bar(data, label_key, series, title)` | Multi-series clustered horizontal bars |
+| `gen_stacked_column(data, label_key, series, title)` | Vertical stacked column chart (SVG) |
+| `gen_line_chart(data, x_key, series, title)` | SVG polyline time-series chart |
+| `gen_html_table(data, columns, title, stripe)` | Styled HTML table with zebra striping |
+
+### Other Repository Files
+
+* 🔌 **[pbi_connector.py](file:///C:/Users/Sebas/desktop-ssas-mcp/pbi_connector.py)** - ADOMD.NET connector: port scanner + DAX execution engine
+* 📈 **[create_dashboard.py](file:///C:/Users/Sebas/desktop-ssas-mcp/create_dashboard.py)** - Standalone Plotly browser dashboard from live DAX data
+* 🛠️ **[fix_tmdl_format.py](file:///C:/Users/Sebas/desktop-ssas-mcp/fix_tmdl_format.py)** - Sanitize unquoted `formatString` entries in `.tmdl` files
+* 🚀 **[launch.py](file:///C:/Users/Sebas/desktop-ssas-mcp/launch.py)** - Sanitizing launcher: clears `PYTHONPATH`/`PYTHONHOME` before boot
+* 📖 **[README.md](file:///C:/Users/Sebas/desktop-ssas-mcp/README.md)** - Full setup, tool reference, and agent installation prompt

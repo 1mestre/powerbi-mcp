@@ -44,8 +44,32 @@ Use this skill when appending DAX measures, editing model properties, or modifyi
 ## 4. SSAS Live Query Execution & Inspection
 
 To inspect the existing tabular model metadata or test DAX expressions live against running Power BI Desktop instances:
-* Use the local MCP server tools in [server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py): `get_schema`, `list_databases`, and `execute_dax`.
+* Use the MCP tools in [server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py): `list_instances()`, `get_schema(port)`, and `execute_dax(port, query)`.
 * The underlying connection is managed by [pbi_connector.py](file:///C:/Users/Sebas/desktop-ssas-mcp/pbi_connector.py), which uses `Microsoft.PowerBI.AdomdClient.dll` to execute DAX queries programmatically.
+
+---
+
+## 5. HTML Measures — DAX+HTML Pattern for HTML Content Visual
+
+DAX measures can return HTML strings that render inside Power BI's **HTML Content** visual (by Daniel Marsh-Patrick). This is the pattern used by [Power-BI-Visuals-Using-Claude-AI-HTML-DAX (Fasaclox)](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX).
+
+**How to generate HTML measures programmatically:**
+1. Use `generate_html_visual(port, query, chart_type, ...)` MCP tool to execute a DAX query and generate the HTML string.
+2. Optionally pass `tmdl_path` + `measure_name` to write the measure directly to the `.tmdl` file.
+3. Or manually embed the HTML: `measure 'My Chart' = "<style>...</style><div>...</div>"`
+
+**TMDL rules for HTML measures:**
+- The entire HTML string is the DAX expression — double-quote any internal double quotes: `"` → `""`
+- No `formatString` needed on HTML measures.
+- Use `add_measure_to_tmdl()` tool to safely inject without touching the partition block.
+- The measure must return a scalar string — no `RETURN` table, no `EVALUATE`.
+
+**Example (minimal):**
+```
+measure 'HTML Bar Chart' = "<div style='font-family:Segoe UI'>...</div>"
+```
+
+**Full generation:** See [html_generators.py](file:///C:/Users/Sebas/desktop-ssas-mcp/html_generators.py) for 7 ready-to-use HTML visual generators (bar, donut, KPI, clustered bar, stacked column, line, table).
 
 ---
 
