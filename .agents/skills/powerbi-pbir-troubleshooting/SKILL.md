@@ -9,31 +9,83 @@ Use this skill when debugging errors in Power BI Desktop, fixing visual load cra
 
 ---
 
-## 1. File Encoding & JSON Manipulation Fixes
+---
 
-### 1.1 UTF-8 WITHOUT BOM (CRITICAL FOR PBIP LOAD)
-Power BI Project (PBIP) requires ALL JSON files to be **UTF-8 encoded WITHOUT Byte Order Mark (BOM)**. PowerShell 5.1 `Set-Content -Encoding UTF8` adds a BOM, which causes PBID to crash on open with: *"Only text with UTF8 encoding without BOM is supported. Detected BOM: 'UTF-8'"*.
-**Fix:** Use .NET directly in PowerShell:
-```powershell
-$utf8NoBom = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($path, $content, $utf8NoBom)
+## 6. Five Pillars of Deterministic PBIR Styling (Anti-Gravity Framework)
+
+These 5 pillars eliminate infinite correction loops. Every PBIR styling task MUST verify all 5 before considering complete.
+
+### 🟢 Pilar 1: Programmatic Binding of Custom Visuals (AppSource)
+**Failure cause:** Third-party visuals (publicCustomVisuals) in PBIR ignore projection if `queryState` only includes `"Values"`. Most use a manifest-specific internal role (e.g., `"content"` for HTML Content).
+**Rule for Hermes:** When generating `visual.json` for a custom visual, Hermes MUST duplicate the projection in `queryState` under both `"Values"` AND the manifest-specific role key (`"content"`, `"script"`, etc.).
+
+### 🟢 Pilar 2: Canvas Background (page.json) vs Theme JSON
+**Failure cause:** `visualStyles.page.background` inside a theme JSON is ignored by PBIR render engine for the main canvas.
+**Rule for Hermes:** To change canvas color (e.g., to `#FFFFFF` or `#0F3040`), Hermes MUST edit `page.json` directly in `objects.background`:
+```json
+"background": [{
+  "properties": {
+    "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#0F3040'" } } } } },
+    "transparency": { "expr": { "Literal": { "Value": "0D" } } }
+  }
+}]
 ```
+**Note:** `page.json` background does NOT accept `show` property — including it causes schema validation error: *"Se ha incluido una propiedad 'show' adicional"*.
 
-### 1.2 Use Python for JSON Manipulation (CRITICAL)
-PowerShell `ConvertFrom-Json` / `ConvertTo-Json` serializes nested hashtables as `"System.Collections.Hashtable"` strings, breaking PBIR's `expr.Literal.Value` structure. **Always use Python** for `visual.json` manipulation:
+### 🟢 Pilar 3: Strict Color Key Mapping by Visual Type
+**Failure cause:** Using generic keys like `"color"` or `"labelColor"` on wrong visual types makes Power BI ignore the property and fall back to default (ColorId: 0 → white/gray, no contrast).
+**Rule for Hermes — exact keys per visual:**
 
-```python
-import json
+| Visual Type | Main Value | Labels/Callouts | Axis Labels | Subtitle/Category |
+|-------------|------------|-----------------|-------------|-------------------|
+| **card (KPI)** | `"labels"` → `"color"` | — | — | `"categoryLabels"` → `"show": false` |
+| **donutChart** | — | `"labels"` → `"color"` | — | Legend: `"legend"` → `"labelColor"` |
+| **barChart/columnChart** | `"dataPoint"` → `"fill"` | `"dataLabels"` → `"labelColor"` | `"categoryAxis"`/`"valueAxis"` → `"labelColor"` | Axis titles: `"titleColor"` or `"showTitle": false` |
+| **slicer** | — | `"items"` → `"fontColor"` | — | `"header"` → `"show": false` |
 
-path = "Report/definition/pages/page_guid/visuals/vis_guid/visual.json"
-with open(path, "r", encoding="utf-8") as f:
-    data = json.load(f)
-
-# Modify data cleanly...
-
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
+### 🟢 Pilar 4: Force Multi-Color Bars via scopeId Selectors
+**Failure cause:** Single `objects.dataPoint` assignment → all bars monochrome.
+**Rule for Hermes:** To force distinct colors per bar, inject array in `objects.dataPoint` with explicit `scopeId` selectors matching each category value:
+```json
+"dataPoint": [
+  {
+    "properties": { "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#0080FF'" } } } } } },
+    "selector": {
+      "metadata": "Entity.Column",
+      "data": [{ "scopeId": { "Comparison": { "ComparisonKind": 0, "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "Entity" } }, "Property": "Column" } }, "Right": { "Literal": { "Value": "'Category 1'" } } } } }]
+    }
+  }
+]
 ```
+**Critical:** `Comparison.Right` contains `Literal` **directly**, NO outer `expr` wrapper.
+
+### 🟢 Pilar 5: Grid 1280x720 with Safety Margins (Anti-Crowding)
+**Failure cause:** Continuous x/y coordinates without gaps → visual collapse/overlap.
+**Rule for Hermes:**
+- Canvas: 1280 x 720 (standard)
+- Canvas margins: ≥ 20px (x=20, y=20)
+- Inter-visual gap: ≥ 20px (next x = prev x + prev w + 20)
+- Min heights: KPIs/Slicers h ≥ 100px; Charts h ≥ 260px
+- If switching slicer `orientation: "2"` → `"1"`, MUST expand canvas height and push down ALL lower visuals (y += delta) or use `orientation: "2"` dropdown for top bars.
+
+---
+
+### Quick Validation Checklist (Run Before Declaring Done)
+- [ ] All `visual.json` schema = 2.9.0 (matches report.json)
+- [ ] `cache.abf` deleted
+- [ ] `page.json` canvas background set (no `show`)
+- [ ] Custom visuals: dual projection (`Values` + manifest role)
+- [ ] Color keys per Pilar 3 table
+- [ ] Multi-color bars: scopeId selectors (Pilar 4)
+- [ ] Grid gaps ≥ 20px, min heights respected
+- [ ] PBIP validation: 0 blocking errors (warnings OK)
+
+### 1.3 Schema Version Lock: 2.9.0 (Anti-Gravity Discovery)
+**CRITICAL:** `report.json` declares `"visual": "2.9.0"` in `reportVersionAtImport`. ALL `visual.json` files **MUST** use schema `2.9.0`. If they use `2.10.0` (or any other), PBID silently ignores them — visuals render with defaults, no errors shown.
+```json
+"$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json"
+```
+Validate: `grep -r '"\$schema"' Report/definition/pages/*/visuals/*/visual.json | grep -v 2.9.0`
 
 ---
 
@@ -407,6 +459,101 @@ Execute ALL steps in order. Skipping any step causes partial application:
 | 4 | Set `page.json → objects.background` on every page | Theme JSON `visualStyles.background` is ignored |
 | 5 | Set `visual.json → objects.dataPoint` on every chart | Baked-in colors override theme `dataColors` |
 | 6 | Reopen PBID and verify all pages | Confirm colors, backgrounds, and chart series |
+
+## 6. Anti-Gravity 5 Pillars — PBIR Framework Hardening (Added 2026-07-21)
+
+These 5 pillars were extracted from a successful PBIR fix cycle (NETFLIX dashboard) where previous agent iterations failed in infinite correction loops. Incorporate these into any PBIR-related prompt or workflow to guarantee deterministic first-pass success.
+
+---
+
+### 🟢 Pilar 1: Binding Programático de Visuales Custom (AppSource)
+
+**Causa del fallo:** Los visuales de terceros (`publicCustomVisuals`) en PBIR ignoran la proyección si en `queryState` solo se incluye `"Values"`. La mayoría utiliza un rol interno específico de su manifiesto (p. ej., `"content"` para HTML Content).
+
+**Regla para Hermes:** Al generar un `visual.json` para un visual custom, Hermes debe duplicar la proyección en `queryState` bajo la clave `"Values"` y la clave específica del rol (`"content"`).
+
+```json
+"queryState": {
+  "Values": { "projections": [...] },
+  "content":  { "projections": [...] }  // DUPLICADO EXACTO
+}
+```
+
+---
+
+### 🟢 Pilar 2: Fondo del Lienzo (Canvas) vs Tema JSON
+
+**Causa del fallo:** `visualStyles.page.background` dentro de un archivo de tema JSON es ignorado por el motor de renderizado PBIR para el lienzo principal.
+
+**Regla para Hermes:** Para cambiar el color del lienzo (p. ej. a Blanco `#FFFFFF`), Hermes DEBE editar `page.json` directamente en `objects.background`:
+
+```json
+"background": [{
+  "properties": {
+    "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } },
+    "transparency": { "expr": { "Literal": { "Value": "0D" } } }
+  }
+}]
+```
+
+(Nota: `page.json` NO acepta la propiedad `show`; incluirla lanza error de esquema).
+
+---
+
+### 🟢 Pilar 3: Mapeo Estricto de Claves de Color por Tipo de Visual
+
+**Causa del fallo:** Usar nombres genéricos como `"color"` o `"labelColor"` en visuales incorrectos hace que Power BI ignore la propiedad y recurra al color por defecto (que con `ColorId: 0` resuelve a blanco o gris sin contraste).
+
+**Regla para Hermes:**
+
+| Visual | Clave Correcta en `objects` | Valor Típico |
+|--------|----------------------------|--------------|
+| **Tarjeta KPI Clásica (`card`)** | La cifra grande se formatea en `"labels"` (con propiedad `"color"`). El subtítulo inferior se oculta en `"categoryLabels"` (plural, con `"show": false`). | `"color": "#FFFFFF"`, `"fontSize": 24D` |
+| **Donut / Pie Chart (`donutChart`)** | El texto de las llamadas de porcentaje con flecha se ajusta en `"labels"` usando `"color": "#FFFFFF"`. | `"color": "#FFFFFF"` |
+| **Barras (`barChart` / `columnChart`)** | El color de los textos de la escala es `"labelColor"`, y el título del eje es `"titleColor"` (o `"showTitle": false` para ocultar la etiqueta de campo redundante). | `"labelColor": "#94A3B8"` |
+
+---
+
+### 🟢 Pilar 4: Forzar Barras Multicolor en Gráficos de Barras (`scopeId` Selectors)
+
+**Causa del fallo:** Asignar un solo objeto a `objects.dataPoint` provoca que todas las barras se pinten monocromáticas.
+
+**Regla para Hermes:** Para forzar colores distintos por barra, Hermes debe inyectar un array en `objects.dataPoint` usando selectores `scopeId` de comparación. La propiedad `"Right"` dentro de `"Comparison"` **NO debe llevar wrapper `"expr"` externo**:
+
+```json
+"dataPoint": [
+  {
+    "properties": { "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#E50914'" } } } } } },
+    "selector": {
+      "metadata": "tabla.columna",
+      "data": [{
+        "scopeId": {
+          "Comparison": {
+            "ComparisonKind": 0,
+            "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "tabla" } }, "Property": "columna" } },
+            "Right": { "Literal": { "Value": "'ValorCategoria'" } }
+          }
+        }
+      }]
+    }
+  }
+]
+```
+
+---
+
+### 🟢 Pilar 5: Rejilla 1280x720 y Márgenes de Seguridad (Anti-Apiñamiento)
+
+**Causa del fallo:** Asignar anchos o coordenadas `x` continuas sin espacio provoca colapso visual o encimado.
+
+**Regla para Hermes:**
+
+| Parámetro | Valor | Regla |
+|-----------|-------|-------|
+| Dimensiones referencia | 1280 x 720 (o 1280 x 920) | Lienzo estándar |
+| Márgenes de lienzo | Mínimo 20px a los bordes | `x=20`, `y=20` |
+| Brecha inter-visual (Gap) | Mínimo 20px entre bloques contiguos | Si un KPI mide `w=280` y empieza en `x=20`, el siguiente debe empezar en `x = 20 + 280 + 20 = 320` |
+| Altura mínima | KPIs y Slicers `h >= 100px`; Gráficos `h >= 260px` | |
 
 ---
 

@@ -105,6 +105,11 @@ Grouped charts (e.g., `treemap`, `funnel`, `barChart`, `columnChart`, `pieChart`
   ]
 }
 ```
+**Schema Version Lock (CRITICAL):** All `visual.json` files **MUST** use schema version `2.9.0` to match the `visual: "2.9.0"` declared in `report.json` (`reportVersionAtImport`). Using `2.10.0` or any other version causes PBID to silently ignore the visual — it renders with defaults, no error shown.
+```json
+"$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json"
+```
+Validate: `grep -r '"\$schema"' Report/definition/pages/*/visuals/*/visual.json | grep -v 2.9.0`
 
 ---
 
@@ -192,9 +197,9 @@ To set visual titles programmatically in `visualContainer` format:
 
 ### KPI Cards (Classic Card Visuals)
 To style cards with solid backgrounds and white callout text:
-- **Hide Category Label:** Target the `"categoryLabel"` object (not `"labels"`):
+- **Hide Category Label:** Target the `"categoryLabels"` object (not `"labels"`):
   ```json
-  "categoryLabel": [
+  "categoryLabels": [
     {
       "properties": {
         "show": { "expr": { "Literal": { "Value": "false" } } }
@@ -409,7 +414,7 @@ When adding new report pages (e.g. `page_advanced_analytics`):
 
 ## 🔗 RELATED SKILLS & REPOSITORY FILES
 
-- 🏠 **[powerbi-pbir-editor](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-pbir-editor/SKILL.md)** - Master Skill Hub
+- 🏠 **[powerbi-orchestrator](file:///C:/Users/Sebas/AppData/Local/hermes/skills/powerbi/powerbi-orchestrator/SKILL.md)** - Master Skill Hub
 - 🎨 **[powerbi-design-layout-themes](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-design-layout-themes/SKILL.md)** - Canvas Grid & ThemeDataColor Palette Mapping
 - 🔧 **[powerbi-pbir-troubleshooting](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-pbir-troubleshooting/SKILL.md)** - Troubleshooting PBID rewrite behaviors and JSON syntax errors
 - 📈 **[create_dashboard.py](file:///C:/Users/Sebas/desktop-ssas-mcp/create_dashboard.py)** - Interactive Plotly dashboard and SSAS DAX query integration

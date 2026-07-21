@@ -1,0 +1,29 @@
+{
+  "_comment": "Starter template for dark-theme visual.json styling. Copy this pattern when creating visuals with pbir add visual, then modify colors per type.",
+  "_palette": {
+    "page_bg": "#0F3040",
+    "card_bg": "#1A4055",
+    "border_color": "#285468",
+    "title_color": "#F8FAFC",
+    "axis_label_color": "#CBD5E1",
+    "gridline_color": "#4B5563",
+    "data_label_color": "#F8FAFC",
+    "legend_color": "#CBD5E1",
+    "card_label_color": "#F8FAFC",
+    "card_category_color": "#CBD5E1",
+    "slicer_text_color": "#F8FAFC"
+  },
+  "_rules": {
+    "categorical_bar": "REMOVE dataPoint from objects — let PBID cycle theme dataColors",
+    "temporal_bar": "single color, no dataPoint",
+    "donut": "no dataPoint, labels.labelColor = #F8FAFC",
+    "card": "cardLabels.labelColor = #F8FAFC, categoryLabelColor = #CBD5E1",
+    "slicer": "header.fontColor, items.fontColor, inputText.fontColor all = #F8FAFC",
+    "line": "categoryAxis + valueAxis labels = #CBD5E1, gridlines = #4B5563",
+    "html": "single Values measure with HTML-returning DAX, htmlContent visualType"
+  },
+  "_schema": {
+    "visualContainerObjects": ["background", "border", "title", "subTitle", "visualTooltip", "dropShadow"],
+    "objects": ["categoryAxis", "valueAxis", "dataPoint", "dataLabels", "labels", "legend", "header", "items", "inputText", "cardLabels", "fillRule", "defaultColor"]
+  }
+}
