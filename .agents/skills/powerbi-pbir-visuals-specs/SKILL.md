@@ -37,7 +37,6 @@ Never use legacy, descriptive, or regional names (e.g., `columnStackedChart` or 
   - `"slicer"` (slicer controls)
   - `"pythonVisual"` (Python visual using Matplotlib/Seaborn/Pandas)
   - `"rVisual"` (R visual using ggplot2/lattice/base R)
-  - `"htmlContent"` (HTML Content visual by Daniel Marsh-Patrick — renders a DAX measure that returns an HTML string; install from AppSource before using)
 
 ---
 

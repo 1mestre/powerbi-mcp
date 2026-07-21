@@ -12,14 +12,16 @@ Copy and paste this into a new session with your AI agent to auto-configure the 
 
 ```
 1. **Dependency Installation:** If the `.venv/` directory does not exist, initialize a Python virtual environment (`python -m venv .venv`), activate it, and install all dependencies declared in `requirements.txt`.
-2. **Skill Registration:** Copy the `.agents/skills/powerbi-pbir-editor` customizations directory to your local global skills directory (e.g., in Hermes: `C:\Users\{User}\AppData\Local\hermes\skills\`).
+2. **Skill Registration (Hermes):** Load the orchestrator skill:
+   `skill_view(name='powerbi-orchestrator')` — this is the single entry point.
+   For other agents, copy `.agents/skills/powerbi-orchestrator/` to your skills directory.
 3. **MCP Server Registration:** Register the `powerbi-local` MCP server in your global configuration file (e.g., in Hermes: `config.yaml`, in Cursor/Cline: `mcpjson.json`).
    - **CRITICAL:** Configure the command pointing to the Python executable of the local virtual environment (`.venv/Scripts/python.exe`) and the arguments pointing to the `launch.py` script. This prevents sys.path conflicts (PYTHONPATH pollution) when importing the `mcp` library.
-4. **Understanding Your Capabilities (CRITICAL):** Do not assume you cannot create report pages or visuals programmatically. You have full filesystem write access. You can create new pages and visuals by writing `visual.json` files in the `.Report/definition/pages/{page-guid}/visuals/{visual-name}/` folder according to the `powerbi-pbir-editor` skill rules. For HTML-rendered charts, use the `generate_html_visual` tool and place the output inside an HTML Content visual. Never tell the user you cannot create visuals.
-5. **Next Steps (Request from Human):** Once installation is complete:
-   - "I have successfully installed and configured the Power BI MCP server and skills."
-   - "Please open Power BI Desktop with your project."
-   - "Provide me with the absolute path to your `.pbip` file and the name of the table you want to work with."
+4. **Framework Registration:** Copy `framework/` into your agent's workspace or skills directory. This contains 4 validation scripts, the guardrails reference, and the complete orchestrator workflow.
+5. **Guided Workflow:** Load the orchestrator skill (`powerbi-orchestrator`) — it automates the 8-phase interactive workflow: ask → analyze → bootstrap → model → design → build → verify → deliver. Run validation scripts between each phase.
+6. **Next Steps (Request from Human):** Once installation is complete:
+   - "I have successfully installed and configured the Power BI Orchestrator framework."
+   - "Please open Power BI Desktop with your project, or provide a CSV/Excel file to start a new dashboard."
 ```
 
 ---
@@ -42,15 +44,82 @@ Copy and paste this into a new session with your AI agent to auto-configure the 
 
 ```
 desktop-ssas-mcp/
-├── server.py            # MCP server – all 5 tools registered here
-├── pbi_connector.py     # ADOMD.NET connector + active port scanner
-├── html_generators.py   # HTML visual generators (DAX+HTML pattern)
-├── launch.py            # Sanitizing launcher wrapper
-├── create_dashboard.py  # Standalone Plotly dashboard (browser preview)
-├── fix_tmdl_format.py   # Utility: fix unquoted formatString values in TMDL
-├── test_adomd.py        # Standalone connection test script
-├── requirements.txt     # Python dependencies
-└── .agents/             # AI agent skills (powerbi-pbir-editor, etc.)
+├── server.py              # MCP server — tools: list_instances, get_schema, execute_dax, add_measure_to_tmdl, generate_html_visual
+├── pbi_connector.py       # ADOMD.NET connector + active port scanner
+├── html_generators.py     # HTML visual generators (7 chart types)
+├── launch.py              # Sanitizing launcher wrapper
+├── create_dashboard.py    # Standalone Plotly dashboard (browser preview)
+├── fix_tmdl_format.py     # Utility: fix unquoted formatString values in TMDL
+├── new_powerbi_dashboard.py # Full automation: CSV/Excel → finished PBIP (38 functions)
+├── test_adomd.py          # Standalone connection test script
+├── requirements.txt       # Python dependencies
+├── framework/             # 🆕 Power BI Orchestrator framework
+│   ├── SKILL.md           # Master orchestrator skill
+│   ├── references/
+│   │   └── guardrails.md  # 6 absolute non-negotiable rules
+│   └── scripts/
+│       ├── validate_pbip.py  # 11-structural-check validator
+│       ├── fix_tmdl.py       # CRLF→LF, formatString, BOM fixer
+│       ├── apply_theme.py    # 5 premium themes + custom
+│       └── check_overlaps.py # Visual overlap & layout checker
+├── .agents/
+│   └── skills/            # AI agent skills (Hermes, Claude, Cursor)
+│       ├── powerbi-orchestrator/       # Master entry point
+│       ├── powerbi-tmdl-modeling/      # DAX + TMDL rules
+│       ├── powerbi-design-layout-themes/ # WCAG, grid, themes
+│       ├── powerbi-pbir-visuals-specs/  # Visual types, projections
+│       └── powerbi-pbir-troubleshooting/ # Traps & fixes
+```
+
+---
+
+## 🎯 Power BI Orchestrator Framework
+
+The **Power BI Orchestrator** is a complete, model-agnostic framework for agent-driven dashboard creation. It wraps the MCP server capabilities into a guardrail-enforced, interactive 8-phase workflow.
+
+### 8-Phase Workflow
+
+| Phase | What Happens | Validation |
+|-------|-------------|------------|
+| 0 | **Interactive Discovery** — Ask user about purpose, audience, data source | — |
+| 1 | **Environment Check** — Verify MCP, skills, scripts, PBID status | `validate_pbip.py` |
+| 2 | **Data Import** — User imports CSV/Excel in PBID, saves as PBIP | — |
+| 3 | **Model Analysis** — Agent reads schema, suggests measures | — |
+| 4 | **Measure Injection** — Write DAX to TMDL, fix formatting | `fix_tmdl.py` |
+| 5 | **Theme Selection** — Apply one of 5 premium themes | `apply_theme.py` |
+| 6 | **Visual Creation** — Prompt user for chart types, create via `pbir add visual` | `check_overlaps.py` |
+| 7 | **Final Verification** — Full validation + cache cleanup | `validate_pbip.py` + `fix_tmdl.py` |
+| 8 | **Human Review** — User opens PBID, confirms rendering | — |
+
+### 6 Absolute Guardrails
+
+1. **NEVER** create model.bim/TMDL from scratch — user must load data first
+2. **ALWAYS** close PBID before editing files (`taskkill /IM PBIDesktop.exe /F`)
+3. **NEVER** create visual.json manually — use `pbir add visual`
+4. **TMDL requires LF** (`\\n`), NOT CRLF (`\\r\\n`)
+5. **Delete** `cache.abf` before reopening PBID
+6. **NEVER** use `%` in DAX measure names — use `Pct` instead
+
+### Quick Start (for any AI agent)
+
+```python
+# Load the orchestrator
+skill_view(name='powerbi-orchestrator')
+
+# Or for non-Hermes agents, copy .agents/skills/powerbi-orchestrator/
+# and read the SKILL.md — the agent will follow the 8-phase workflow
+
+# Run validation at any time
+python framework/scripts/validate_pbip.py MyProject.pbip
+python framework/scripts/fix_tmdl.py MyProject.SemanticModel/
+python framework/scripts/apply_theme.py MyProject.pbip --theme slate-terracotta
+python framework/scripts/check_overlaps.py MyProject.pbip
+```
+
+### For fully automated creation (no interactive prompts):
+
+```bash
+python new_powerbi_dashboard.py --create MyDashboard data.csv --theme 3
 ```
 
 ---
@@ -265,6 +334,9 @@ All HTML visuals share a consistent design language:
 ---
 
 ## ⚠️ Golden Rules for AI Agents (PBIR 2.0.0+ / TMDL)
+
+> **For the definitive 6 Absolute Guardrails, see `framework/references/guardrails.md` or the orchestrator skill.**
+> These additional rules complement the guardrails with technical implementation details.
 
 ### 1. PBIR Folder Structure for Visuals
 

@@ -11,7 +11,8 @@ Use this skill when appending DAX measures, editing model properties, or modifyi
 
 ## 1. TMDL Syntax & Comments Rules
 
-* **TMDL Comments (CRITICAL):** TMDL only supports `//` for single-line comments. **NEVER use `--` (SQL-style double-dash)** — the TMDL parser will throw `InvalidLineType: Other` at the comment line. Power BI Desktop will fail to load with *"Error de formato TMDL: Tipo de línea inesperado: Other"*. If you must comment, omit comments entirely or use `//`.
+* **TMDL Comments (CRITICAL):** TMDL supports `//` for single-line comments, but **NEVER place `//` comments on the very first line of `model.tmdl`**. The parser expects the file to start directly with the model declaration (`model ModelName {`). A comment on line 1 causes: *"Error de formato TMDL: Tipo de línea inesperado: Other. Documento: ./model, Línea: 1"*. Also **NEVER use `--` (SQL-style double-dash)** — the TMDL parser will throw `InvalidLineType: Other` at the comment line. If you must comment, put them AFTER the model declaration line, not before it.
+* **CRITICAL: TMDL requires LF line endings (`\n`), NOT CRLF (`\r\n`):** Writing `.tmdl` files on Windows with default Python `open()` or PowerShell `Set-Content` produces CRLF line endings, which corrupts every line. The TMDL parser sees the trailing `\r` as part of the content and throws `InvalidLineType: Other` on EVERY line including the model declaration. **Fix:** Always write `.tmdl` files with `newline='\n'` in Python, or use .NET `WriteAllText` with UTF8 encoding in PowerShell. For JSON files (`.pbip`, `.pbir`, `.pbism`, `.json`) CRLF is tolerated by Power BI's JSON parser, but TMDL is strictly LF-only.
 * **TMDL Indentation & Spaces (CRITICAL):** TMDL is extremely sensitive to tabs vs spaces. **NEVER mix spaces and tabs** in any `.tmdl` file. 
   - In `model.tmdl`, references to tables (`ref table TableName`) and cultures (`ref cultureInfo es-ES`) **MUST reside at the root level (no indentation, 0 leading whitespace)**. Indenting `ref table` lines with a space or tab will cause a parser crash showing: *"Error de formato TMDL: Tipo de error de análisis: InvalidLineType - Tipo de línea inesperado: ReferenceObject"* on `./model`.
   - In table partition source blocks, indent code lines strictly using clean tab characters (`\t`) with no mixed trailing spaces.
@@ -24,7 +25,7 @@ Use this skill when appending DAX measures, editing model properties, or modifyi
 
 ## 2. Model Properties & Engine Constraints
 
-* **`discourageImplicitMeasures` Setting (CRITICAL):** If the model defines any Calculation Group (`calculationGroup`), you **MUST** set the property `discourageImplicitMeasures: true` under `model Model` in `model.tmdl`. Failure to do so will result in a load crash in Power BI Desktop.
+* **`compatibilityLevel` correct for Power BI Desktop:** Use `compatibilityLevel: 1600` for Power BI semantic models. Values above 1600 (like `1650`) cause `Unsupported db compat level detected` — the embedded SSAS engine rejects them with `'1650' is not a valid value for this element`. For reference: 1200=SSAS 2016, 1400=SSAS 2017, 1500=PBI 2020-2022, 1600=PBI 2023-2025+, 1650=not yet supported by engine.
 * **Avoid `isKey` on Dimensions (CRITICAL):** Do not add `isKey: true` to primary key columns of standard import tables (like date or dimension tables). It can cause *"a cyclic reference was found during evaluation"* errors in Power Query. Use model-level relationships to map the keys.
   - **Transient Evaluation Cache Bug:** Even when the model schema is 100% correct, Power BI Desktop may occasionally display a false-positive *"Se encontró una referencia cíclica durante la evaluación"* (A cyclic reference was found during evaluation) error on first open or first refresh due to a corrupted memory cache in the engine. This is a known Power BI bug. **Solution:** Tell the user to simply click the **Actualizar (Refresh)** button a second time, or close and reopen Power BI Desktop. The second load always completes successfully.
 * **Partition Preservation (CRITICAL):** **NEVER** modify or delete the `partition {table} = m` block or the `annotation PBI_ResultType = Table` block located at the bottom of the `.tmdl` file. Deleting the partition block will cause a fatal load crash in Power BI Desktop with the error: `"Todas las tablas deben contener al menos una partición con la propiedad Full DataView"`. Any automated regex or parsing scripts to wipe/add measures must leave the partition block untouched.
@@ -44,32 +45,8 @@ Use this skill when appending DAX measures, editing model properties, or modifyi
 ## 4. SSAS Live Query Execution & Inspection
 
 To inspect the existing tabular model metadata or test DAX expressions live against running Power BI Desktop instances:
-* Use the MCP tools in [server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py): `list_instances()`, `get_schema(port)`, and `execute_dax(port, query)`.
+* Use the local MCP server tools in [server.py](file:///C:/Users/Sebas/desktop-ssas-mcp/server.py): `get_schema`, `list_databases`, and `execute_dax`.
 * The underlying connection is managed by [pbi_connector.py](file:///C:/Users/Sebas/desktop-ssas-mcp/pbi_connector.py), which uses `Microsoft.PowerBI.AdomdClient.dll` to execute DAX queries programmatically.
-
----
-
-## 5. HTML Measures — DAX+HTML Pattern for HTML Content Visual
-
-DAX measures can return HTML strings that render inside Power BI's **HTML Content** visual (by Daniel Marsh-Patrick). This is the pattern used by [Power-BI-Visuals-Using-Claude-AI-HTML-DAX (Fasaclox)](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX).
-
-**How to generate HTML measures programmatically:**
-1. Use `generate_html_visual(port, query, chart_type, ...)` MCP tool to execute a DAX query and generate the HTML string.
-2. Optionally pass `tmdl_path` + `measure_name` to write the measure directly to the `.tmdl` file.
-3. Or manually embed the HTML: `measure 'My Chart' = "<style>...</style><div>...</div>"`
-
-**TMDL rules for HTML measures:**
-- The entire HTML string is the DAX expression — double-quote any internal double quotes: `"` → `""`
-- No `formatString` needed on HTML measures.
-- Use `add_measure_to_tmdl()` tool to safely inject without touching the partition block.
-- The measure must return a scalar string — no `RETURN` table, no `EVALUATE`.
-
-**Example (minimal):**
-```
-measure 'HTML Bar Chart' = "<div style='font-family:Segoe UI'>...</div>"
-```
-
-**Full generation:** See [html_generators.py](file:///C:/Users/Sebas/desktop-ssas-mcp/html_generators.py) for 7 ready-to-use HTML visual generators (bar, donut, KPI, clustered bar, stacked column, line, table).
 
 ---
 
