@@ -1,225 +1,85 @@
-# Power BI Desktop Local MCP Server
+# ⚡ Power BI Hermes Framework — Multi-Agent PBIP & PBIR Executive Dashboard Engine
 
-A **Model Context Protocol (MCP) server** that gives AI assistants (Claude Desktop, Cursor, Cline, Hermes, and others) direct, programmatic access to locally running **Power BI Desktop** instances on Windows.
+[![Power BI PBIR](https://img.shields.io/badge/Power_BI-PBIP%20%7C%20PBIR%202.0-yellow?style=for-the-badge&logo=powerbi)](https://powerbi.microsoft.com/)
+[![Framework Version](https://img.shields.io/badge/Framework-2.0.0--Gold-blue?style=for-the-badge)](https://github.com/1mestre/desktop-ssas-mcp)
+[![Harness Compatibility](https://img.shields.io/badge/Agents-Hermes%20%7C%20Anti--Gravity%20%7C%20Claude%20%7C%20Cursor-green?style=for-the-badge)](https://github.com/1mestre/desktop-ssas-mcp)
 
-The agent can discover open reports, inspect the semantic model schema, execute arbitrary DAX queries, write DAX measures permanently to TMDL files, and — new in this version — **generate fully custom HTML visualizations** using live data from the model, ready to drop into Power BI's native *HTML Content* visual.
-
----
-
-## ⚡ Quick Install Prompt
-
-Copy and paste this into a new session with your AI agent to auto-configure the environment:
-
-```
-1. **Dependency Installation:** If the `.venv/` directory does not exist, initialize a Python virtual environment (`python -m venv .venv`), activate it, and install all dependencies declared in `requirements.txt`.
-2. **Skill Registration (Hermes):** Load the orchestrator skill:
-   `skill_view(name='powerbi-orchestrator')` — this is the single entry point.
-   For other agents, copy `.agents/skills/powerbi-orchestrator/` to your skills directory.
-3. **MCP Server Registration:** Register the `powerbi-local` MCP server in your global configuration file (e.g., in Hermes: `config.yaml`, in Cursor/Cline: `mcpjson.json`).
-   - **CRITICAL:** Configure the command pointing to the Python executable of the local virtual environment (`.venv/Scripts/python.exe`) and the arguments pointing to the `launch.py` script. This prevents sys.path conflicts (PYTHONPATH pollution) when importing the `mcp` library.
-4. **Framework Registration:** Copy `framework/` into your agent's workspace or skills directory. This contains 4 validation scripts, the guardrails reference, and the complete orchestrator workflow.
-5. **Guided Workflow:** Load the orchestrator skill (`powerbi-orchestrator`) — it automates the 8-phase interactive workflow: ask → analyze → bootstrap → model → design → build → verify → deliver. Run validation scripts between each phase.
-6. **Next Steps (Request from Human):** Once installation is complete:
-   - "I have successfully installed and configured the Power BI Orchestrator framework."
-   - "Please open Power BI Desktop with your project, or provide a CSV/Excel file to start a new dashboard."
-```
+The **Power BI Hermes Framework** is a complete, multi-agent engineering framework designed to give AI assistants (**Hermes, Anti-Gravity, Claude Code, Cursor, Windsurf, Cline**) the exact skills, script engines, visual design math, and verification guardrails needed to build **deterministic, high-contrast, executive-ready Power BI Projects (`.pbip`)** in a single pass — eliminating infinite correction loops, unstyled default light themes, layout overlaps, and broken TMDL files.
 
 ---
 
-## 🔧 Key Features
+## 🌟 What Makes This Framework Unique?
 
-| Feature | Description |
-|---|---|
-| **Dynamic Port Discovery** | Power BI Desktop assigns a random local SSAS port every session. This server auto-scans `AppData` to find and resolve active ports. |
-| **ADOMD.NET Connection** | Uses `pythonnet` to load the native `Microsoft.PowerBI.AdomdClient.dll` shipped with Power BI Desktop — no MSOLAP driver conflicts. |
-| **Schema Inspection** | Reads full semantic model metadata: tables, columns, data types, visibility. |
-| **JSON-Safe DAX Execution** | Runs `EVALUATE SUMMARIZECOLUMNS(...)` and similar, converting .NET decimals, dates, and nulls to clean Python/JSON types. |
-| **TMDL Measure Writer** | Writes DAX measures directly to `.tmdl` files so they persist across Power BI sessions. |
-| **HTML Visual Generator** | Generates self-contained HTML charts (bar, donut, KPI, clustered bar, stacked column, line, table) from live DAX data — inspired by the [Power-BI-Visuals-Using-Claude-AI-HTML-DAX](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX) project. |
-| **Self-Sanitizing Environment** | Clears `PYTHONPATH`/`PYTHONHOME` at startup to prevent host-environment collisions with `pywintypes` or `pythonnet`. |
+Unlike generic scripts or simple MCP wrappers, this framework combines:
+1. **Master Orchestrator & 7 Specialized Skills** (`.agents/skills/`) for multi-page layout, TMDL measure injection, WCAG contrast styling, and visual specification locks.
+2. **Deterministic Python Verification Engine** (`framework/scripts/`) that programmatically patches themes, updates canvas backgrounds, validates contrast, checks coordinate overlaps per page, and fixes line endings.
+3. **5 Anti-Gravity Pillars & 6 Absolute Guardrails** that enforce strict grid math (5 KPIs max per row, `w=232px`, `gap=20px`), schema version locks (`2.9.0`), and explicit color key mappings.
+4. **Desktop SSAS MCP Server Integration** (`server.py` via `launch.py` using `powerbi-local`) for live DAX query execution, port discovery, and TMDL schema inspection directly against running Power BI Desktop instances on Windows.
 
 ---
 
-## 📁 Project Structure
+## ⚡ Quick Start & Universal Agent Activation
 
-```
-desktop-ssas-mcp/
-├── server.py              # MCP server — tools: list_instances, get_schema, execute_dax, add_measure_to_tmdl, generate_html_visual
-├── pbi_connector.py       # ADOMD.NET connector + active port scanner
-├── html_generators.py     # HTML visual generators (7 chart types)
-├── launch.py              # Sanitizing launcher wrapper
-├── create_dashboard.py    # Standalone Plotly dashboard (browser preview)
-├── fix_tmdl_format.py     # Utility: fix unquoted formatString values in TMDL
-├── new_powerbi_dashboard.py # Full automation: CSV/Excel → finished PBIP (38 functions)
-├── test_adomd.py          # Standalone connection test script
-├── requirements.txt       # Python dependencies
-├── framework/             # 🆕 Power BI Orchestrator framework
-│   ├── SKILL.md           # Master orchestrator skill
-│   ├── DESIGN_GUIDELINES.md # Visual aesthetic rules & guidelines
-│   ├── references/
-│   │   └── guardrails.md  # 6 absolute non-negotiable rules
-│   └── scripts/
-│       ├── validate_pbip.py  # 11-structural-check validator (54 checks)
-│       ├── fix_tmdl.py       # CRLF→LF, formatString, BOM fixer
-│       ├── apply_theme.py    # 5 premium themes + custom (Dark/Light mode)
-│       ├── check_overlaps.py # Visual overlap, boundary & page capacity checker
-│       ├── audit_csv.py      # Pre-flight CSV auditor (BOM, quotes, delimiters)
-│       └── csv_fix.py         # Programmatic CSV cleaner
-├── .agents/
-│   └── skills/            # AI agent skills (Hermes, Anti-Gravity, Claude Code, Cursor)
-│       ├── powerbi-orchestrator/       # Master entry point (loads sub-skills auto)
-│       ├── powerbi-tmdl-modeling/      # DAX measures + TMDL formatting rules
-│       ├── powerbi-design-layout-themes/ # 1280x720 Grid math, WCAG contrast, 5 themes
-│       ├── powerbi-pbir-visuals-specs/  # Visual types, queryState schemas, 2.9.0 lock
-│       ├── powerbi-pbir-troubleshooting/ # 5 Anti-Gravity Pillars & trap fixes
-│       ├── powerbi-visual-styling/      # Per-visual-type text & background rules
-│       ├── powerbi-csv-audit/           # Standalone CSV audit rules
-│       └── pbir-dark-theme-styling/     # Dark theme JSON templates
+### 🤖 Option A: Direct Prompt for Any AI Agent (Hermes, Anti-Gravity, Claude, Cursor)
+
+Copy and paste this prompt into a new chat with your AI agent:
+
+```text
+Task: Initialize Power BI Hermes Framework for Dashboard Development.
+
+1. Repository setup: Clone or pull https://github.com/1mestre/desktop-ssas-mcp.git
+2. Environment: Create virtual environment (.venv) and install requirements:
+   python -m venv .venv
+   .\.venv\Scripts\activate
+   pip install -r requirements.txt
+3. Skill Activation:
+   - If using Hermes: Load skill 'powerbi-orchestrator' (auto-loads all sub-skills).
+   - If using Anti-Gravity / Claude Code / Cursor: Copy .agents/skills/* into your agent's active skills path and read .agents/skills/powerbi-orchestrator/SKILL.md.
+4. Mandatory Execution Rules:
+   - Phase 6: ALWAYS run: python framework/scripts/apply_theme.py "<Project>.pbip" --theme slate-terracotta
+   - Phase 7: ALWAYS run: python framework/scripts/check_overlaps.py "<Project>.Report"
+5. Confirm framework readiness to start building the dashboard.
 ```
 
 ---
 
-## 🎯 Power BI Orchestrator Framework
+### 🔧 Option B: Manual Installation & Integration
 
-The **Power BI Orchestrator** is a complete, model-agnostic framework for agent-driven dashboard creation. It wraps the MCP server capabilities into a guardrail-enforced, interactive 8-phase workflow.
-
-### 8-Phase Workflow
-
-| Phase | What Happens | Validation Script |
-|-------|-------------|-------------------|
-| 0 | **Interactive Discovery** — Ask user about purpose, audience, data source | `audit_csv.py` (if CSV/Excel) |
-| 1 | **Environment Check** — Verify MCP, skills, scripts, PBID status | `validate_pbip.py` |
-| 2 | **Data Import** — User imports CSV/Excel in PBID, saves as PBIP | — |
-| 3 | **Model Analysis** — Agent reads schema, suggests measures | `get_schema()` via MCP |
-| 4 | **Measure Injection** — Write DAX to TMDL, fix formatting | `fix_tmdl.py` |
-| 5 | **Theme Selection** — Apply one of 5 premium themes | `apply_theme.py` |
-| 6 | **Visual Creation** — Prompt user for chart types, create via `pbir add visual` | `check_overlaps.py` |
-| 7 | **Final Verification** — Full validation + cache cleanup | `validate_pbip.py` + `check_overlaps.py` |
-| 8 | **Human Review** — User opens PBID, confirms rendering | — |
-
-### 🛑 6 Absolute Guardrails
-
-1. **NEVER** create `model.bim` / TMDL from scratch — user must load data in Power BI Desktop first.
-2. **ALWAYS** close Power BI Desktop before editing files (`taskkill /IM PBIDesktop.exe /F`).
-3. **NEVER** create `visual.json` manually — always use `pbir add visual <type>`.
-4. **TMDL requires LF** (`\n`), NOT CRLF (`\r\n`). Always write TMDL in Python with `newline='\n'`.
-5. **Delete** `<Project>.SemanticModel/.pbi/cache.abf` before reopening Power BI Desktop.
-6. **NEVER** use `%` in DAX measure names — use `Pct` instead (`Avg Discount Pct`).
-
-### ⚡ 5 Anti-Gravity Pillars (Deterministic Styling)
-
-1. **Custom Visual Binding:** Duplicate projections in `queryState` under both `"Values"` and manifest role (`"content"` for HTML Content).
-2. **Canvas Background:** Set canvas background in `page.json` `objects.background` (never use `show` property in `page.json` background!).
-3. **Strict Color Key Mapping:**
-   - `card` KPI: `"labels"` → `"color"`, `"categoryLabels"` → `"show": false`
-   - `donutChart`: `"labels"` → `"color"`, `"legend"` → `"labelColor"`
-   - `barChart`/`columnChart`: `"dataPoint"` → `"fill"`, `"dataLabels"` → `"labelColor"`, `"categoryAxis"`/`valueAxis` → `"labelColor"`
-   - `slicer`: `"items"` → `"fontColor"`, `"header"` → `"show": false`
-4. **Multi-Color Bars:** Array of `scopeId` Comparison selectors in `dataPoint` — `Right` = `Literal` direct without outer `expr`.
-5. **1280x720 Grid & Capacity Limits:**
-   - Canvas 1280x720 (margins 20px, gaps ≥ 20px).
-   - Max **5 to 6 visuals per page**.
-   - Max **5 KPIs per row** (`w=232px`, `gap=20px`, `margin=20px`). Formula: `x_i = 20 + i * 252`.
-
-### Quick Start (for any AI agent)
-
-```python
-# Load the orchestrator
-skill_view(name='powerbi-orchestrator')
-
-# Or for non-Hermes agents, copy .agents/skills/powerbi-orchestrator/
-# and read the SKILL.md — the agent will follow the 8-phase workflow
-
-# Run validation at any time
-python framework/scripts/validate_pbip.py MyProject.pbip
-python framework/scripts/fix_tmdl.py MyProject.SemanticModel/
-python framework/scripts/apply_theme.py MyProject.pbip --theme slate-terracotta
-python framework/scripts/check_overlaps.py MyProject.pbip
-```
-
-### For fully automated creation (no interactive prompts):
-
-```bash
-python new_powerbi_dashboard.py --create MyDashboard data.csv --theme 3
-```
-
----
-
-## 📋 Prerequisites
-
-1. **OS:** Windows (required for Power BI Desktop and .NET assembly loading)
-2. **Python:** 3.10 or higher
-3. **Power BI Desktop:** Standard edition (`C:\Program Files\Microsoft Power BI Desktop`) or Microsoft Store edition
-
----
-
-## 🚀 Installation & Setup
-
-### 1. Clone & Set Up Virtual Environment
-
+#### 1. Install Skills into Hermes
 ```powershell
-# Create virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-.\.venv\Scripts\Activate.ps1
-
-# Install dependencies
-pip install -r requirements.txt
+# Copy framework skills to Hermes active profile path
+xcopy /E /I /Y .agents\skills\* %LOCALAPPDATA%\hermes\skills\
 ```
 
-### 2. Test the Connection
-
-With Power BI Desktop open and a dataset loaded:
-
+#### 2. Install Skills into Workspace (Anti-Gravity / Claude Code / Cursor / Windsurf)
 ```powershell
-fastmcp run server.py
+# Copy framework skills to current project workspace
+xcopy /E /I /Y .agents\skills\* .agents\skills\
 ```
 
-Or run the standalone test:
+#### 3. Register MCP Server (Optional — for Live SSAS DAX Execution & Port Scanning)
 
-```powershell
-.\.venv\Scripts\python.exe test_adomd.py
-```
+Add the `powerbi-local` server to your agent's MCP configuration file:
 
-### 3. Register the MCP Server in Your AI Client
-
-#### Hermes (`config.yaml`)
-
+##### Hermes (`config.yaml`)
 ```yaml
 mcp_servers:
   powerbi-local:
-    command: C:/Users/{User}/desktop-ssas-mcp/.venv/Scripts/python.exe
+    command: C:/path/to/desktop-ssas-mcp/.venv/Scripts/python.exe
     args:
-      - C:/Users/{User}/desktop-ssas-mcp/launch.py
+      - C:/path/to/desktop-ssas-mcp/launch.py
     connect_timeout: 30
     timeout: 120
 ```
 
-#### Cursor / Cline (`mcpjson.json`)
-
+##### Cursor / Cline / Windsurf (`mcp.json` / `claude_desktop_config.json`)
 ```json
 {
   "mcpServers": {
     "powerbi-local": {
-      "command": "C:\\Users\\{User}\\desktop-ssas-mcp\\.venv\\Scripts\\python.exe",
+      "command": "C:\\path\\to\\desktop-ssas-mcp\\.venv\\Scripts\\python.exe",
       "args": [
-        "C:\\Users\\{User}\\desktop-ssas-mcp\\launch.py"
-      ]
-    }
-  }
-}
-```
-
-#### Claude Desktop (`claude_desktop_config.json`)
-
-```json
-{
-  "mcpServers": {
-    "powerbi-local": {
-      "command": "C:\\Users\\{User}\\desktop-ssas-mcp\\.venv\\Scripts\\python.exe",
-      "args": [
-        "C:\\Users\\{User}\\desktop-ssas-mcp\\launch.py"
+        "C:\\path\\to\\desktop-ssas-mcp\\launch.py"
       ]
     }
   }
@@ -228,196 +88,151 @@ mcp_servers:
 
 ---
 
-## 🛠 MCP Tools Reference
+## 📁 Framework Architecture & File Map
 
-### `list_instances()`
-
-Scans local AppData for active Power BI Desktop SSAS workspaces.
-
-**Returns:** `[{"path": "...", "port": "12345"}, ...]`
-
----
-
-### `get_schema(port)`
-
-Retrieves the full semantic model schema from the specified port.
-
-**Args:**
-- `port` — from `list_instances()`
-
-**Returns:** `[{"Name": "TableName", "Columns": [{"Name": "col", "DataType": "String", "IsHidden": false}]}, ...]`
-
----
-
-### `execute_dax(port, query)`
-
-Executes a DAX query and returns clean JSON-serializable results.
-
-**Args:**
-- `port` — from `list_instances()`
-- `query` — DAX string, e.g. `EVALUATE SUMMARIZECOLUMNS('Sales'[Country], "Total", SUM('Sales'[Amount]))`
-
-**Returns:** `[{"Sales[Country]": "Mexico", "Total": 125000.0}, ...]`
-
----
-
-### `add_measure_to_tmdl(tmdl_path, name, expression, format_string?)`
-
-Writes a new DAX measure directly to a `.tmdl` semantic model file, inserting it before the `partition` block (or at end of file). Validates for duplicates before writing.
-
-**Args:**
-- `tmdl_path` — absolute path to the table `.tmdl` file
-- `name` — measure name (e.g. `"Total Sales"`)
-- `expression` — DAX formula (e.g. `SUM('Sales'[Amount])`)
-- `format_string` *(optional)* — e.g. `"$#,##0"`
-
-**Returns:** Success or error string.
-
----
-
-### `generate_html_visual(port, query, chart_type, label_key, value_key, ...)`
-
-**The core integration with the [Fasaclox HTML+DAX pattern](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX).**
-
-Executes a DAX query, generates a self-contained HTML visual from the results, and optionally writes it as a DAX measure to a `.tmdl` file. The resulting HTML can be placed in Power BI's **HTML Content** visual (by Daniel Marsh-Patrick) for fully custom, interactive-style charts.
-
-**Supported `chart_type` values:**
-
-| `chart_type` | Description |
-|---|---|
-| `"bar"` | Horizontal gauge-style bar chart |
-| `"donut"` | SVG donut / ring chart with legend |
-| `"kpi"` | KPI card with attainment % and progress bar |
-| `"clustered_bar"` | Multi-series clustered horizontal bar chart |
-| `"stacked_column"` | Vertical stacked column chart (SVG) |
-| `"line"` | SVG polyline line / time-series chart |
-| `"table"` | Styled HTML table with optional zebra striping |
-
-**Key Args:**
-- `port` — SSAS port from `list_instances()`
-- `query` — DAX EVALUATE query
-- `chart_type` — see table above
-- `label_key` — column name for labels / X-axis categories
-- `value_key` — column name for the primary numeric value
-- `title` — chart title string
-- `series_json` — JSON array for multi-series charts: `'[{"key":"Sales","label":"Net Sales","color":"#3b82f6"}]'`
-- `value_prefix` / `value_suffix` — e.g. `"$"` or `" units"`
-- `value_decimals` — decimal places in value labels
-- `color` — primary colour for single-series charts (hex)
-- `tmdl_path` *(optional)* — if set alongside `measure_name`, the HTML is written as a DAX measure
-- `measure_name` *(optional)* — name for the TMDL measure
-
-**Returns:**
-```json
-{
-  "html": "<style>...</style><div>...</div>",
-  "chart_type": "bar",
-  "row_count": 12,
-  "tmdl_result": "Successfully added measure 'Sales by Country' to Sales.tmdl"
-}
-```
-
-#### Example Agent Workflow — HTML Bar Chart
-
-```
-1. list_instances()                     → port = "54321"
-2. get_schema("54321")                  → find table "Sales", columns "Country", "Amount"
-3. generate_html_visual(
-     port="54321",
-     query='EVALUATE SUMMARIZECOLUMNS("Sales"[Country], "Total", SUM("Sales"[Amount]))',
-     chart_type="bar",
-     label_key="Country",
-     value_key="Total",
-     title="Sales by Country",
-     value_prefix="$",
-     value_decimals=0,
-     color="#10b981",
-     tmdl_path="C:/path/Sales.SemanticModel/definition/tables/Sales.tmdl",
-     measure_name="HTML Sales by Country"
-   )
-   → returns html + writes measure to TMDL
-4. Add "HTML Content" visual to report page
-5. Bind measure "HTML Sales by Country" to the visual's Values field
+```text
+desktop-ssas-mcp/
+├── README.md                           # Master documentation & installation guide
+├── requirements.txt                    # Core Python dependencies (fastmcp, pythonnet, etc.)
+├── launch.py                           # Sanitizing launcher wrapper (prevents PYTHONPATH collisions)
+├── server.py                           # MCP server tools (list_instances, get_schema, execute_dax, add_measure_to_tmdl, generate_html_visual)
+├── pbi_connector.py                    # ADOMD.NET connector & active SSAS port scanner
+├── html_generators.py                  # HTML visual generators (bar, donut, KPI, column, line, table)
+├── fix_tmdl_format.py                  # TMDL formatString sanitizer
+├── new_powerbi_dashboard.py            # Automation suite for batch generation
+├── framework/                          # 📦 Core Framework Distribution
+│   ├── SKILL.md                        # Framework Master Entry Point
+│   ├── DESIGN_GUIDELINES.md            # Visual aesthetics, WCAG contrast & theme tokens
+│   ├── references/
+│   │   └── guardrails.md               # 6 non-negotiable pre-flight guardrails
+│   └── scripts/                        # 🛠️ Deterministic Python Execution Engine
+│       ├── apply_theme.py              # Visual styling & theme engine (Dark/Light mode)
+│       ├── check_overlaps.py           # Per-page visual overlap & 1280x720 boundary checker
+│       ├── validate_pbip.py            # 54-check PBIP structural validator
+│       ├── fix_tmdl.py                 # TMDL CRLF→LF, BOM & syntax sanitizer
+│       ├── audit_csv.py                # Pre-flight CSV auditor (BOM, quotes, delimiters)
+│       └── csv_fix.py                  # Programmatic CSV cleaner
+└── .agents/
+    └── skills/                         # 🤖 AI Agent Skill Suite (Hermes, Anti-Gravity, Claude, Cursor)
+        ├── powerbi-orchestrator/       # MASTER SKILL (Loads all sub-skills automatically)
+        ├── powerbi-tmdl-modeling/      # DAX measures, TMDL formatting & partition preservation
+        ├── powerbi-design-layout-themes/ # 1280x720 Grid math, 5 themes & WCAG 2.1 AA rules
+        ├── powerbi-pbir-visuals-specs/  # Visual types, queryState projections & 2.9.0 schema lock
+        ├── powerbi-pbir-troubleshooting/ # 5 Anti-Gravity Pillars & operational trap fixes
+        ├── powerbi-visual-styling/      # Visual-type specific text & container background rules
+        ├── powerbi-csv-audit/           # Pre-flight CSV data pipeline audit
+        └── pbir-dark-theme-styling/     # Dark theme JSON exact property templates
 ```
 
 ---
 
-## 📊 HTML Visual Design System (`html_generators.py`)
+## 🎯 Guided 8-Phase Workflow
 
-All HTML visuals share a consistent design language:
+Every agent executing tasks with this framework MUST follow this 8-phase workflow:
 
-- **Font:** Segoe UI (native Power BI font — no external loading)
-- **Colors:** Professional Tailwind-inspired palette (`#3b82f6` blue, `#10b981` green, `#ef4444` red, `#f59e0b` amber)
-- **CSS:** Fully inlined, scoped with short class names — no conflicts inside the HTML Content iframe sandbox
-- **No dependencies:** Pure HTML + CSS + inline SVG — no external CDN, no JavaScript frameworks
-- **Responsive:** Flex layouts that adapt to the visual container width
+| Phase | Name | What Happens | Mandatory Tool / Script Gate |
+|:---:|---|---|---|
+| **0** | **Interactive Discovery** | Ask user for data path, dashboard purpose, audience, and theme preference. | `audit_csv.py` (if input is CSV) |
+| **1** | **Environment Check** | Verify PBIP directory structure and ensure Power BI Desktop is closed. | `validate_pbip.py` |
+| **2** | **Data Analysis** | Inspect semantic model schema and sample rows. | `get_schema()` / `execute_dax()` via MCP |
+| **3** | **Visual Design** | Select one of 5 premium themes and establish page grid. | `powerbi-design-layout-themes` |
+| **4** | **DAX Modeling** | Inject DAX measures into `.tmdl` files (`newline='\n'`). | `fix_tmdl.py` |
+| **5** | **Visual Creation** | Generate visuals using `pbir add visual <type>` (never manual JSON). | `pbir-cli` |
+| **6** | **Theme & Styling** | **MANDATORY EXECUTION:** Apply theme and patch `page.json` backgrounds. | `python scripts/apply_theme.py "<Project>.pbip" --theme slate-terracotta` |
+| **7** | **Final Verification** | **MANDATORY EXECUTION:** Verify 0 overlaps and 52/54+ PBIP checks. | `python scripts/check_overlaps.py` & `validate_pbip.py` |
+| **8** | **Human Delivery** | Delete `cache.abf` and ask user to open `.pbip` in Power BI Desktop. | — |
 
 ---
 
-## ⚠️ Golden Rules for AI Agents (PBIR 2.0.0+ / TMDL)
+## 🛡️ 6 Absolute Guardrails & ⚡ 5 Anti-Gravity Pillars
 
-> **For the definitive 6 Absolute Guardrails, see `framework/references/guardrails.md` or the orchestrator skill.**
-> These additional rules complement the guardrails with technical implementation details.
+### 🛑 6 Absolute Guardrails (Violations = Broken Dashboard)
+1. **REGLA #1: NEVER create `model.bim` / TMDL from scratch.** The user MUST load data into Power BI Desktop and save as `.pbip`.
+2. **REGLA #2: ALWAYS close Power BI Desktop before editing files.** Run `taskkill /IM PBIDesktop.exe /F`.
+3. **REGLA #3: NEVER create `visual.json` manually.** ALWAYS use `pbir add visual <type>`.
+4. **REGLA #4: TMDL requires strictly LF line endings (`\n`), NOT CRLF (`\r\n`).** Python files MUST use `open(..., newline='\n')`.
+5. **REGLA #5: ALWAYS delete `cache.abf` before reopening Power BI Desktop.** (`<Project>.SemanticModel/.pbi/cache.abf`).
+6. **REGLA #6: NEVER use `%` in DAX measure names.** Use `Pct` instead (`Avg Discount Pct`).
 
-### 1. PBIR Folder Structure for Visuals
+---
 
-Each visual must live in its own subfolder inside `visuals/`:
+### ⚡ 5 Anti-Gravity Pillars (Deterministic Layout & Contrast)
 
-```
-{project}.Report/
-  definition/
-    pages/
-      {20-char-hex-page-id}/
-        page.json
-        visuals/
-          {visual-name}/
-            visual.json
-```
-
-### 2. HTML Content Visual — Binding the HTML Measure
-
-To display a generated HTML visual in Power BI:
-1. Add the **HTML Content** visual (by Daniel Marsh-Patrick) to the report page via AppSource.
-2. In `visual.json`, set `"visualType": "htmlContent"` (or whichever identifier the visual uses).
-3. Bind the DAX measure that returns the HTML string to the visual's `Values` field.
-4. The visual renders the HTML inside a sandboxed iframe — no external script loading allowed.
-
-### 3. Column vs. Measure Rule (CRITICAL)
-
-Bar, column, line, combo, pie, donut charts, and treemaps **do not accept raw columns** on their value axis. Always define a DAX measure first via `add_measure_to_tmdl`, then reference it as a `"Measure"` projection in `visual.json`.
-
-**Exception:** Table visuals (`tableEx`) accept direct column references.
-
-### 4. Projection Keys by Chart Type
-
-| Chart Type | Category key | Value key |
+| Pilar | Core Rule | Implementation Detail |
 |---|---|---|
-| Bar, Column, Line, Combo, Pie, Donut | `"Category"` | `"Y"` |
-| Treemap | `"Group"` | `"Values"` |
-| Table (`tableEx`) | — | `"Values"` |
+| **1. Custom Visual Binding** | Dual projection in `queryState` | Duplicate field projections under both `"Values"` AND manifest role (`"content"` for HTML Content). |
+| **2. Canvas Background** | Direct `page.json` override | Edit `objects.background` in `page.json` directly. **NO `show` property in `page.json` background** (causes schema error). |
+| **3. Color Key Mapping** | Strict keys per visual type | Card:`labels`/`categoryLabels`, Donut:`labels`/`legend`, Bar:`dataPoint`/`labelColor`, Slicer:`items`/`header`. |
+| **4. Multi-Color Bars** | `scopeId` selectors in `dataPoint` | Inject `scopeId` Comparison array per category value. `Comparison.Right` contains `Literal` directly without `expr`. |
+| **5. Grid Math & Page Limits** | 1280x720 grid & visual limits | **Max 5-6 visuals per page.** **Max 5 KPIs per row** (`w=232px`, `gap=20px`, `margin=20px`). Formula: `x_i = 20 + i * 252`. |
 
-### 5. TMDL Rules
+---
 
-- **Calculation Groups:** Adding any `calculationGroup` requires `discourageImplicitMeasures: true` in `model.tmdl`.
-- **No `isKey: true`** on import dimension columns — causes cyclic reference errors in Power Query.
-- **Double-quote `formatString`:** Always: `formatString: "$#,##0"` — unquoted symbols crash Power BI.
-- **Duplicate check:** Scan the `.tmdl` file before inserting any measure.
-- **Indentation:** Match the file's existing indentation (tabs vs. 2-space).
+## 🎨 5 Premium Themes Catalogue
 
-### 6. Workflow & Cache Rules
+`apply_theme.py` includes 5 complete built-in visual profiles for dark and light modes:
 
-- **Close Power BI before edits:** Run `taskkill /IM PBIDesktop.exe /F` before modifying `.Report` or `.SemanticModel` files. An open instance will overwrite local changes.
-- **Clear cache after major refactoring:** Delete `.SemanticModel/.pbi/cache.abf` after star-schema restructures or large model changes to avoid cached metadata conflicts.
-- **No `.git` at drive root:** A `.git` folder at `C:\` or `D:\` causes Power BI's Git integration to crash with a permissions error.
-- **Valid `visual.json` keys:** Never put `"size"`, `"config"`, or `"filters"` at the root — all dimensions go inside `"position"`.
-- **Mandatory projection fields:** Every field projection must contain `"queryRef"` and `"nativeQueryRef"`.
-- **Page folder names:** Must be 20-character lowercase hex strings or GUIDs — not descriptive names.
+| Theme Name | Mode | Palette Overview | Recommended Usage |
+|---|:---:|---|---|
+| **`slate-terracotta`** | Dark | Canvas `#0F3040`, Cards `#1A4055`, Text `#F8FAFC`, Accents `#A56F63`, `#D99B7F` | **Executive / Financial (Default)** |
+| **`magenta-blossom`** | Light | Canvas `#FFFFFF`, Cards `#F9FAFB`, Text `#111827`, Accents `#92003A`, `#F62477` | Marketing & Social Media |
+| **`ecotone-spring`** | Light | Canvas `#F5F2EB`, Cards `#FAF8F3`, Text `#1A1A2E`, Accents `#769826`, `#A1CB35` | Environment & Sustainability |
+| **`roasted-espresso`** | Dark | Canvas `#1A0F0D`, Cards `#2D1814`, Text `#F8FAFC`, Accents `#60241E`, `#E77B49` | Premium Operations & Retail |
+| **`vintage-nordic`** | Light | Canvas `#EBEDE3`, Cards `#F0F2E9`, Text `#0B1849`, Accents `#0B1849`, `#124D1C` | Corporate & Formal Reporting |
+
+---
+
+## 🛠️ Verification Script Engine Reference
+
+### 1. `apply_theme.py` (Theme Application & Visual Styling Engine)
+Applies complete visual styling to all `page.json` files, `CY26SU05.json`, and `visual.json` containers:
+```powershell
+python framework/scripts/apply_theme.py "F:/projects/Sales.pbip" --theme slate-terracotta
+```
+
+### 2. `check_overlaps.py` (Visual Layout & Boundary Checker)
+Checks every page for visual collisions, boundary overflow (`x+w > 1280` or `y+h > 720`), and page overcrowding (>6 visuals):
+```powershell
+python framework/scripts/check_overlaps.py "F:/projects/Sales.pbip"
+```
+
+### 3. `validate_pbip.py` (54-Check PBIP Validator)
+Runs full structural analysis across `.pbip`, `.pbir`, `pages.json`, `visual.json`, and `.tmdl` files:
+```powershell
+python framework/scripts/validate_pbip.py "F:/projects/Sales.pbip"
+```
+
+### 4. `fix_tmdl.py` (TMDL Line Ending & BOM Sanitizer)
+Enforces LF line endings (`\n`), removes UTF-8 BOM, and quotes unquoted `formatString` entries in TMDL files:
+```powershell
+python framework/scripts/fix_tmdl.py "F:/projects/Sales.SemanticModel/definition/"
+```
+
+### 5. `audit_csv.py` (Pre-flight CSV Auditor)
+Audits raw input CSV files for unbalanced quotes, inconsistent column counts, UTF-8 BOM, and CRLF:
+```powershell
+python framework/scripts/audit_csv.py "data/sales_raw.csv"
+```
+
+---
+
+## 🔌 Desktop SSAS MCP Server Tools API (`powerbi-local`)
+
+When running Power BI Desktop on Windows, the MCP server (`server.py`) exposes these 5 native tools:
+
+| Tool | Purpose | Output Format |
+|---|---|---|
+| **`list_instances()`** | Auto-scans local AppData to detect active Power BI Desktop SSAS ports. | `[{"path": "...", "port": "54321"}]` |
+| **`get_schema(port)`** | Retrieves full semantic model schema (tables, columns, data types, measures). | `[{"Name": "Sales", "Columns": [...]}]` |
+| **`execute_dax(port, query)`** | Executes live DAX `EVALUATE` queries against the active SSAS engine. | `[{"Sales[Country]": "Mexico", "Total": 125000}]` |
+| **`add_measure_to_tmdl(tmdl_path, name, expression, format_string)`** | Appends DAX measures safely into `.tmdl` files before partition blocks. | Success / error string |
+| **`generate_html_visual(...)`** | Generates self-contained HTML visual measures for Daniel Marsh-Patrick's *HTML Content* visual. | `{"html": "...", "tmdl_result": "..."}` |
 
 ---
 
 ## 🔗 Credits & References
 
-- [Power-BI-Visuals-Using-Claude-AI-HTML-DAX](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX) — Fasaclox — pattern for DAX measures that return HTML strings for use in the HTML Content visual
-- [HTML Content Visual](https://appsource.microsoft.com/en-us/product/power-bi-visuals/WA104380985) — Daniel Marsh-Patrick — the Power BI custom visual that renders HTML measures
-- [Model Context Protocol](https://modelcontextprotocol.io) — Anthropic — open standard for tool-equipped AI agents
-- [FastMCP](https://github.com/jlowin/fastmcp) — high-level Python framework for building MCP servers
+- [Skill Creator Guidelines](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md) — Anthropic
+- [Power-BI-Visuals-Using-Claude-AI-HTML-DAX](https://github.com/Fasaclox/Power-BI-Visuals-Using-Claude-AI-HTML-DAX) — Fasaclox
+- [HTML Content Visual](https://appsource.microsoft.com/en-us/product/power-bi-visuals/WA104380985) — Daniel Marsh-Patrick
+- [Model Context Protocol](https://modelcontextprotocol.io) — Anthropic
