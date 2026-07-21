@@ -33,51 +33,51 @@ that the orchestrator's Phase 6 (Theme & Styling) needs but doesn't encode.
 | 11 | **HTML Content custom visual needs dual projection** | Must have both "Values" AND "content" in queryState for auto-binding |
 | 12 | **Slicer: orientation goes in items, NOT general** | Adding orientation under general breaks slicer (blank, no checkboxes); use `items.orientation: "1"` for horizontal tiles with `general.responsive: false` |
 
-## 🎯 5 Pilares del Framework Anti-Gravity (Reglas Obligatorias)
+## 🎯 5 Core Deterministic PBIR Styling Principles
 
-Estos 5 pilares evitan bucles infinitos de corrección al trabajar con PBIP/PBIR. **Inclúyelos en el prompt del agente** para ejecución determinista:
+These 5 core principles eliminate infinite correction loops when working with PBIP/PBIR:
 
-### 🟢 Pilar 1: Binding Programático de Visuales Custom (AppSource)
-**Causa del fallo:** Los visuales de terceros (`publicCustomVisuals`) en PBIR ignoran la proyección si en `queryState` solo se incluye `"Values"`. La mayoría usa un rol interno específico de su manifiesto (p. ej., `"content"` para HTML Content).
-**Regla para el agente:** Al generar un `visual.json` para un visual custom, duplicar la proyección en `queryState` bajo la clave `"Values"` y la clave específica del rol (`"content"`).
+### 🟢 Principle 1: Programmatic Binding of Custom Visuals (AppSource)
+**Failure cause:** Third-party visuals (`publicCustomVisuals`) in PBIR ignore projection if `queryState` only includes `"Values"`. Most use a manifest-specific internal role (e.g. `"content"` for HTML Content).
+**Rule for Agents:** When generating `visual.json` for a custom visual, duplicate the field projection in `queryState` under both `"Values"` and the manifest-specific role key (`"content"`).
 
-### 🟢 Pilar 2: Fondo del Lienzo (Canvas) vs Tema JSON
-**Causa del fallo:** `visualStyles.page.background` dentro de un archivo de tema JSON es ignorado por el motor de renderizado PBIR para el lienzo principal.
-**Regla para el agente:** Para cambiar el color del lienzo (p. ej. a Blanco `#FFFFFF`), editar `page.json` directamente en `objects.background`:
+### 🟢 Principle 2: Canvas Background (page.json) vs Theme JSON
+**Failure cause:** `visualStyles.page.background` inside a theme JSON file is ignored by the PBIR rendering engine for the main canvas.
+**Rule for Agents:** To change canvas background color, edit `page.json` directly under `objects.background`:
 ```json
 "background": [{
   "properties": {
-    "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } },
+    "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#0F3040'" } } } } },
     "transparency": { "expr": { "Literal": { "Value": "0D" } } }
   }
 }]
 ```
-(Nota: `page.json` no acepta la propiedad `show`; incluirla lanza un error de esquema).
+*(Note: `page.json` background does NOT accept the `show` property; including it triggers a schema error).*
 
-### 🟢 Pilar 3: Mapeo Estricto de Claves de Color por Tipo de Visual
-**Causa del fallo:** Usar nombres genéricos como `"color"` o `"labelColor"` en visuales incorrectos hace que Power BI ignore la propiedad y recurra al color por defecto (que con `ColorId: 0` resuelve a blanco o gris sin contraste).
-**Regla para el agente:**
-| Visual Type | Clave Correcta | Error Común |
-|-------------|----------------|-------------|
-| **Tarjeta KPI Clásica (`card`)** | La cifra grande se formatea en `"labels"` (con propiedad `"color"`). El subtítulo inferior se oculta en `"categoryLabels"` (plural, con `"show": false`). | Usar `"dataLabels"` o `"categoryLabel"` (singular) → sin efecto |
-| **Donut / Pie Chart (`donutChart`)** | El texto de las llamadas de porcentaje con flecha se ajusta en `"labels"` usando `"color": "'#FFFFFF'"`. | Usar `"dataLabels"` → no funciona |
-| **Barras (`barChart` / `columnChart`)** | El color de los textos de la escala es `"labelColor"`, y el título del eje es `"titleColor"` (o `"showTitle": false` para ocultar la etiqueta de campo redundante). | Usar `"fontColor"` → ignorado |
+### 🟢 Principle 3: Strict Color Key Mapping by Visual Type
+**Failure cause:** Using generic names like `"color"` or `"labelColor"` on incorrect visual types causes Power BI to ignore the setting and fall back to default colors.
+**Rule for Agents:**
+| Visual Type | Correct `objects` Key | Typical Value |
+|-------------|-----------------------|---------------|
+| **KPI Card (`card`)** | Callout value is formatted in `"labels"` (`"color"`). Subtitle is hidden in `"categoryLabels"` (`"show": false`). | `"color": "#FFFFFF"`, `"fontSize": 24D` |
+| **Donut / Pie Chart (`donutChart`)** | Callout labels set in `"labels"` using `"color"`. Legend set in `"legend"` using `"labelColor"`. | `"color": "#FFFFFF"` |
+| **Bar / Column (`barChart` / `columnChart`)** | Axis label color is `"labelColor"`, title color is `"titleColor"` (or `"showTitle": false`). | `"labelColor": "#94A3B8"` |
 
-### 🟢 Pilar 4: Forzar Barras Multicolor en Gráficos de Barras (`scopeId` Selectors)
-**Causa del fallo:** Asignar un solo objeto a `objects.dataPoint` provoca que todas las barras se pinten monocromáticas.
-**Regla para el agente:** Para forzar colores distintos por barra, inyectar un array en `objects.dataPoint` usando selectores `scopeId` de comparación. La propiedad `"Right"` dentro de `"Comparison"` **NO debe llevar wrapper `"expr"` externo**:
+### 🟢 Principle 4: Force Multi-Color Bars (`scopeId` Selectors)
+**Failure cause:** Assigning a single object to `objects.dataPoint` renders all bars monochrome.
+**Rule for Agents:** To force distinct colors per bar, inject an array of `scopeId` Comparison selectors into `objects.dataPoint`. `Comparison.Right` MUST contain `Literal` directly without an outer `expr` wrapper:
 ```json
 "dataPoint": [
   {
     "properties": { "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#E50914'" } } } } } },
     "selector": {
-      "metadata": "tabla.columna",
+      "metadata": "Table.Column",
       "data": [{
         "scopeId": {
           "Comparison": {
             "ComparisonKind": 0,
-            "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "tabla" } }, "Property": "columna" } },
-            "Right": { "Literal": { "Value": "'ValorCategoria'" } }
+            "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "Table" } }, "Property": "Column" } },
+            "Right": { "Literal": { "Value": "'CategoryValue'" } }
           }
         }
       }]
@@ -86,13 +86,13 @@ Estos 5 pilares evitan bucles infinitos de corrección al trabajar con PBIP/PBIR
 ]
 ```
 
-### 🟢 Pilar 5: Rejilla 1280x720 y Márgenes de Seguridad (Anti-Apiñamiento)
-**Causa del fallo:** Asignar anchos o coordenadas x continuas sin espacio provoca colapso visual o encimado.
-**Regla para el agente:**
-- **Dimensiones de referencia:** Lienzo estándar `1280 x 720` (o `1280 x 920`).
-- **Márgenes de lienzo:** Mínimo `20px` a los bordes (`x=20`, `y=20`).
-- **Brecha inter-visual (Gap):** Mínimo `20px` entre bloques contiguos (si un KPI mide `w=280` y empieza en `x=20`, el siguiente debe empezar en `x = 20 + 280 + 20 = 320`).
-- **Altura mínima:** KPIs y Slicers `h >= 100px`; Gráficos `h >= 260px`.
+### 🟢 Principle 5: 1280x720 Grid & Safety Margins
+**Failure cause:** Continuous x/y coordinates without gaps cause visual collapse or overlap.
+**Rule for Agents:**
+- **Canvas Reference:** Standard `1280 x 720` (or `1280 x 920`).
+- **Canvas Margins:** Minimum `20px` to canvas edges (`x=20`, `y=20`).
+- **Inter-Visual Spacing (Gaps):** Minimum `20px` between adjacent visual containers.
+- **Page Capacity & Heights:** Max **5-6 visuals per page**. KPIs/Slicers `h >= 100px`; Charts `h >= 260px`. Max 5 KPIs per row (`w=232px`, `gap=20px`). Formula: `x_i = 20 + i * 252`.
 
 ---
 

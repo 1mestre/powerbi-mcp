@@ -4,7 +4,7 @@ description: >-
   MASTER SKILL — Single entry point for creating Power BI dashboards from CSV/Excel.
   Mandatory for any Power BI task, dashboard creation, PBIP generation, DAX modeling,
   or visual report editing. Automatically loads sub-skills and enforces 6 guardrails,
-  5 Anti-Gravity pillars, and script verification.
+  5 core styling principles, and script verification.
 tags: [powerbi, master, orchestrator, dashboard, interactive, guardrails, pbip]
 load_skills:
   - powerbi-tmdl-modeling
@@ -68,13 +68,13 @@ When Power BI Desktop is running locally, the agent MUST leverage the 5 MCP tool
 
 ---
 
-## ⚡ 5 PILARES ANTI-GRAVITY (Canónicos)
+## ⚡ 5 CORE PRINCIPLES OF DETERMINISTIC PBIR STYLING
 
-1. **Custom Visual Binding:** Dual projection `Values` + manifest role (`content` para HTML Content).
-2. **Canvas vs Theme:** Set canvas background in `page.json` `objects.background` (never `show` property!).
-3. **Color Key Mapping:** Card:`labels`, Donut:`labels`, Bar:`dataPoint`/`labelColor`, Slicer:`items`.
+1. **Custom Visual Binding:** Dual projection `Values` + manifest role (`content` for HTML Content).
+2. **Canvas vs Theme:** Set canvas background in `page.json` `objects.background` (never use `show` property in `page.json` background!).
+3. **Color Key Mapping:** Card:`labels`/`categoryLabels`, Donut:`labels`/`legend`, Bar:`dataPoint`/`labelColor`, Slicer:`items`/`header`.
 4. **Multi-Color Bars:** `scopeId` Comparison selector in `dataPoint` — `Right` = Literal direct without `expr`.
-5. **Grid 1280x720 + Márgenes:** Canvas 1280x720, margins 20px, gaps 20px, min heights (KPI 100px, Chart 260px).
+5. **Grid 1280x720 & Safety Margins:** Canvas 1280x720, margins 20px, gaps 20px, max 5-6 visuals per page (KPI height ≥ 100px, Chart height ≥ 260px).
 
 ---
 

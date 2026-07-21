@@ -139,7 +139,7 @@ Todo agente que ejecute tareas con este framework DEBE seguir este flujo:
 
 ---
 
-## 🛡️ 6 Guardrailes Absolutos y 5 Pilares Anti-Gravity
+## 🛡️ 6 Guardrailes Absolutos y 5 Principios Deterministas
 
 ### 🛑 6 Guardrailes Absolutos (Violación = Dashboard Roto)
 1. **REGLA #1: NUNCA crear `model.bim` ni TMDL desde cero.** El usuario DEBE cargar los datos en Power BI Desktop y guardar como `.pbip`.
@@ -151,9 +151,9 @@ Todo agente que ejecute tareas con este framework DEBE seguir este flujo:
 
 ---
 
-### ⚡ 5 Pilares Anti-Gravity (Estilo Determinista)
+### ⚡ 5 Principios Deterministas de Estilo PBIR
 
-| Pilar | Regla Principal | Detalle de Implementación |
+| Principio | Regla Principal | Detalle de Implementación |
 |---|---|---|
 | **1. Custom Visual Binding** | Proyección dual en `queryState` | Duplicar proyecciones bajo `"Values"` Y el rol del manifiesto (`"content"` para HTML Content). |
 | **2. Canvas Background** | Sobrescribir `page.json` directamente | Editar `objects.background` en `page.json`. **NUNCA incluir la propiedad `show` en `page.json`** (causa error de esquema). |

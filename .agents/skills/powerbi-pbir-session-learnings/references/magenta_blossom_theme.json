@@ -1,0 +1,29 @@
+{
+  "name": "CY26SU05",
+  "dataColors": [
+    "#92003A",
+    "#F62477",
+    "#FFADEE",
+    "#FFE185",
+    "#3B82F6",
+    "#10B981",
+    "#8B5CF6",
+    "#F59E0B"
+  ],
+  "foreground": "#111827",
+  "foregroundNeutralSecondary": "#6B7280",
+  "foregroundNeutralTertiary": "#9CA3AF",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F9FAFB",
+  "backgroundNeutral": "#E5E7EB",
+  "tableAccent": "#92003A",
+  "good": "#10B981",
+  "neutral": "#92003A",
+  "bad": "#EF4444",
+  "maximum": "#92003A",
+  "center": "#FFADEE",
+  "minimum": "#FCE7F3",
+  "null": "#F62477",
+  "hyperlink": "#92003A",
+  "visitedHyperlink": "#F62477"
+}

@@ -1,0 +1,13 @@
+{
+  "visualType": "donutChart",
+  "name": "{{VISUAL_NAME}}",
+  "title": "{{VISUAL_TITLE}}",
+  "x": {{X_POS}},
+  "y": {{Y_POS}},
+  "width": {{WIDTH}},
+  "height": {{HEIGHT}},
+  "fields": {
+    "Category": "{{CATEGORY_FIELD}}",
+    "Y": "{{MEASURE_FIELD}}"
+  }
+}

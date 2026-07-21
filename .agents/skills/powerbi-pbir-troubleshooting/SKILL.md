@@ -11,17 +11,17 @@ Use this skill when debugging errors in Power BI Desktop, fixing visual load cra
 
 ---
 
-## 6. Five Pillars of Deterministic PBIR Styling (Anti-Gravity Framework)
+## 6. Five Core Principles of Deterministic PBIR Styling
 
-These 5 pillars eliminate infinite correction loops. Every PBIR styling task MUST verify all 5 before considering complete.
+These 5 core principles eliminate infinite correction loops. Every PBIR styling task MUST verify all 5 before considering complete.
 
-### 🟢 Pilar 1: Programmatic Binding of Custom Visuals (AppSource)
+### 🟢 Principle 1: Programmatic Binding of Custom Visuals (AppSource)
 **Failure cause:** Third-party visuals (publicCustomVisuals) in PBIR ignore projection if `queryState` only includes `"Values"`. Most use a manifest-specific internal role (e.g., `"content"` for HTML Content).
-**Rule for Hermes:** When generating `visual.json` for a custom visual, Hermes MUST duplicate the projection in `queryState` under both `"Values"` AND the manifest-specific role key (`"content"`, `"script"`, etc.).
+**Rule for Agents:** When generating `visual.json` for a custom visual, the agent MUST duplicate the projection in `queryState` under both `"Values"` AND the manifest-specific role key (`"content"`, `"script"`, etc.).
 
-### 🟢 Pilar 2: Canvas Background (page.json) vs Theme JSON
+### 🟢 Principle 2: Canvas Background (page.json) vs Theme JSON
 **Failure cause:** `visualStyles.page.background` inside a theme JSON is ignored by PBIR render engine for the main canvas.
-**Rule for Hermes:** To change canvas color (e.g., to `#FFFFFF` or `#0F3040`), Hermes MUST edit `page.json` directly in `objects.background`:
+**Rule for Agents:** To change canvas color (e.g., to `#FFFFFF` or `#0F3040`), the agent MUST edit `page.json` directly in `objects.background`:
 ```json
 "background": [{
   "properties": {
@@ -32,9 +32,9 @@ These 5 pillars eliminate infinite correction loops. Every PBIR styling task MUS
 ```
 **Note:** `page.json` background does NOT accept `show` property — including it causes schema validation error: *"Se ha incluido una propiedad 'show' adicional"*.
 
-### 🟢 Pilar 3: Strict Color Key Mapping by Visual Type
+### 🟢 Principle 3: Strict Color Key Mapping by Visual Type
 **Failure cause:** Using generic keys like `"color"` or `"labelColor"` on wrong visual types makes Power BI ignore the property and fall back to default (ColorId: 0 → white/gray, no contrast).
-**Rule for Hermes — exact keys per visual:**
+**Rule for Agents — exact keys per visual:**
 
 | Visual Type | Main Value | Labels/Callouts | Axis Labels | Subtitle/Category |
 |-------------|------------|-----------------|-------------|-------------------|
@@ -43,9 +43,9 @@ These 5 pillars eliminate infinite correction loops. Every PBIR styling task MUS
 | **barChart/columnChart** | `"dataPoint"` → `"fill"` | `"dataLabels"` → `"labelColor"` | `"categoryAxis"`/`"valueAxis"` → `"labelColor"` | Axis titles: `"titleColor"` or `"showTitle": false` |
 | **slicer** | — | `"items"` → `"fontColor"` | — | `"header"` → `"show": false` |
 
-### 🟢 Pilar 4: Force Multi-Color Bars via scopeId Selectors
+### 🟢 Principle 4: Force Multi-Color Bars via scopeId Selectors
 **Failure cause:** Single `objects.dataPoint` assignment → all bars monochrome.
-**Rule for Hermes:** To force distinct colors per bar, inject array in `objects.dataPoint` with explicit `scopeId` selectors matching each category value:
+**Rule for Agents:** To force distinct colors per bar, inject array in `objects.dataPoint` with explicit `scopeId` selectors matching each category value:
 ```json
 "dataPoint": [
   {
@@ -59,14 +59,14 @@ These 5 pillars eliminate infinite correction loops. Every PBIR styling task MUS
 ```
 **Critical:** `Comparison.Right` contains `Literal` **directly**, NO outer `expr` wrapper.
 
-### 🟢 Pilar 5: Grid 1280x720 with Safety Margins (Anti-Crowding)
+### 🟢 Principle 5: Grid 1280x720 with Safety Margins & Page Limits
 **Failure cause:** Continuous x/y coordinates without gaps → visual collapse/overlap.
-**Rule for Hermes:**
+**Rule for Agents:**
 - Canvas: 1280 x 720 (standard)
 - Canvas margins: ≥ 20px (x=20, y=20)
 - Inter-visual gap: ≥ 20px (next x = prev x + prev w + 20)
-- Min heights: KPIs/Slicers h ≥ 100px; Charts h ≥ 260px
-- If switching slicer `orientation: "2"` → `"1"`, MUST expand canvas height and push down ALL lower visuals (y += delta) or use `orientation: "2"` dropdown for top bars.
+- Max 5-6 visuals per page (KPIs/Slicers h ≥ 100px; Charts h ≥ 260px)
+- Max 5 KPIs per row (`w=232px`, `gap=20px`, `margin=20px`). Formula: `x_i = 20 + i * 252`.
 
 ---
 
@@ -460,106 +460,11 @@ Execute ALL steps in order. Skipping any step causes partial application:
 | 5 | Set `visual.json → objects.dataPoint` on every chart | Baked-in colors override theme `dataColors` |
 | 6 | Reopen PBID and verify all pages | Confirm colors, backgrounds, and chart series |
 
-## 6. Anti-Gravity 5 Pillars — PBIR Framework Hardening (Added 2026-07-21)
-
-These 5 pillars were extracted from a successful PBIR fix cycle (NETFLIX dashboard) where previous agent iterations failed in infinite correction loops. Incorporate these into any PBIR-related prompt or workflow to guarantee deterministic first-pass success.
-
----
-
-### 🟢 Pilar 1: Binding Programático de Visuales Custom (AppSource)
-
-**Causa del fallo:** Los visuales de terceros (`publicCustomVisuals`) en PBIR ignoran la proyección si en `queryState` solo se incluye `"Values"`. La mayoría utiliza un rol interno específico de su manifiesto (p. ej., `"content"` para HTML Content).
-
-**Regla para Hermes:** Al generar un `visual.json` para un visual custom, Hermes debe duplicar la proyección en `queryState` bajo la clave `"Values"` y la clave específica del rol (`"content"`).
-
-```json
-"queryState": {
-  "Values": { "projections": [...] },
-  "content":  { "projections": [...] }  // DUPLICADO EXACTO
-}
-```
-
----
-
-### 🟢 Pilar 2: Fondo del Lienzo (Canvas) vs Tema JSON
-
-**Causa del fallo:** `visualStyles.page.background` dentro de un archivo de tema JSON es ignorado por el motor de renderizado PBIR para el lienzo principal.
-
-**Regla para Hermes:** Para cambiar el color del lienzo (p. ej. a Blanco `#FFFFFF`), Hermes DEBE editar `page.json` directamente en `objects.background`:
-
-```json
-"background": [{
-  "properties": {
-    "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } },
-    "transparency": { "expr": { "Literal": { "Value": "0D" } } }
-  }
-}]
-```
-
-(Nota: `page.json` NO acepta la propiedad `show`; incluirla lanza error de esquema).
-
----
-
-### 🟢 Pilar 3: Mapeo Estricto de Claves de Color por Tipo de Visual
-
-**Causa del fallo:** Usar nombres genéricos como `"color"` o `"labelColor"` en visuales incorrectos hace que Power BI ignore la propiedad y recurra al color por defecto (que con `ColorId: 0` resuelve a blanco o gris sin contraste).
-
-**Regla para Hermes:**
-
-| Visual | Clave Correcta en `objects` | Valor Típico |
-|--------|----------------------------|--------------|
-| **Tarjeta KPI Clásica (`card`)** | La cifra grande se formatea en `"labels"` (con propiedad `"color"`). El subtítulo inferior se oculta en `"categoryLabels"` (plural, con `"show": false`). | `"color": "#FFFFFF"`, `"fontSize": 24D` |
-| **Donut / Pie Chart (`donutChart`)** | El texto de las llamadas de porcentaje con flecha se ajusta en `"labels"` usando `"color": "#FFFFFF"`. | `"color": "#FFFFFF"` |
-| **Barras (`barChart` / `columnChart`)** | El color de los textos de la escala es `"labelColor"`, y el título del eje es `"titleColor"` (o `"showTitle": false` para ocultar la etiqueta de campo redundante). | `"labelColor": "#94A3B8"` |
-
----
-
-### 🟢 Pilar 4: Forzar Barras Multicolor en Gráficos de Barras (`scopeId` Selectors)
-
-**Causa del fallo:** Asignar un solo objeto a `objects.dataPoint` provoca que todas las barras se pinten monocromáticas.
-
-**Regla para Hermes:** Para forzar colores distintos por barra, Hermes debe inyectar un array en `objects.dataPoint` usando selectores `scopeId` de comparación. La propiedad `"Right"` dentro de `"Comparison"` **NO debe llevar wrapper `"expr"` externo**:
-
-```json
-"dataPoint": [
-  {
-    "properties": { "fill": { "solid": { "color": { "expr": { "Literal": { "Value": "'#E50914'" } } } } } },
-    "selector": {
-      "metadata": "tabla.columna",
-      "data": [{
-        "scopeId": {
-          "Comparison": {
-            "ComparisonKind": 0,
-            "Left": { "Column": { "Expression": { "SourceRef": { "Entity": "tabla" } }, "Property": "columna" } },
-            "Right": { "Literal": { "Value": "'ValorCategoria'" } }
-          }
-        }
-      }]
-    }
-  }
-]
-```
-
----
-
-### 🟢 Pilar 5: Rejilla 1280x720 y Márgenes de Seguridad (Anti-Apiñamiento)
-
-**Causa del fallo:** Asignar anchos o coordenadas `x` continuas sin espacio provoca colapso visual o encimado.
-
-**Regla para Hermes:**
-
-| Parámetro | Valor | Regla |
-|-----------|-------|-------|
-| Dimensiones referencia | 1280 x 720 (o 1280 x 920) | Lienzo estándar |
-| Márgenes de lienzo | Mínimo 20px a los bordes | `x=20`, `y=20` |
-| Brecha inter-visual (Gap) | Mínimo 20px entre bloques contiguos | Si un KPI mide `w=280` y empieza en `x=20`, el siguiente debe empezar en `x = 20 + 280 + 20 = 320` |
-| Altura mínima | KPIs y Slicers `h >= 100px`; Gráficos `h >= 260px` | |
-
 ---
 
 ## 🔗 RELATED SKILLS & REPOSITORY FILES
 
-- 🏠 **[powerbi-pbir-editor](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-pbir-editor/SKILL.md)** - Master Skill Hub
-- 📊 **[powerbi-pbir-visuals-specs](file:///C:/Users/Sebas/desktop-ssas-mcp/.agents/skills/powerbi-pbir-visuals-specs/SKILL.md)** - Visual Types & JSON Schemas
+- 🏠 **[powerbi-orchestrator](file:///C:/Users/Sebas/AppData/Local/hermes/skills/powerbi/powerbi-orchestrator/SKILL.md)** - Master Skill Hub
+- 📊 **[powerbi-pbir-visuals-specs](file:///C:/Users/Sebas/AppData/Local/hermes/skills/powerbi-pbir-visuals-specs/SKILL.md)** - Visual Types & JSON Schemas
 - 🚀 **[launch.py](file:///C:/Users/Sebas/desktop-ssas-mcp/launch.py)** - Launcher script avoiding PYTHONPATH collision
 - 🛠️ **[fix_tmdl_format.py](file:///C:/Users/Sebas/desktop-ssas-mcp/fix_tmdl_format.py)** - TMDL format string sanitizer

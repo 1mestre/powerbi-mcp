@@ -1,0 +1,115 @@
+table channels
+	lineageTag: 28948dd6-6064-43a7-aa71-63fdddda0604
+
+	column Column1
+		dataType: string
+		lineageTag: b7ce7132-aa37-480a-b105-f6cbac73ddae
+		summarizeBy: none
+		sourceColumn: Column1
+
+		annotation SummarizationSetBy = Automatic
+
+	column Column2
+		dataType: string
+		lineageTag: 4a1c7510-43da-4725-b3f6-bb235584265d
+		summarizeBy: none
+		sourceColumn: Column2
+
+		annotation SummarizationSetBy = Automatic
+
+	column Column3
+		dataType: string
+		lineageTag: ed4166c8-fc4e-4411-b697-67449276f926
+		summarizeBy: none
+		sourceColumn: Column3
+
+		annotation SummarizationSetBy = Automatic
+
+	column Column4
+		dataType: string
+		lineageTag: 1433436d-6419-4f19-add2-eaba2d0c340c
+		summarizeBy: none
+		sourceColumn: Column4
+
+		annotation SummarizationSetBy = Automatic
+
+	column Column5
+		dataType: string
+		lineageTag: 70be8d2e-e2d6-4409-95a6-6a01ed49408b
+		summarizeBy: none
+		sourceColumn: Column5
+
+		annotation SummarizationSetBy = Automatic
+
+	column Column6
+		dataType: string
+		lineageTag: 351167d1-4b99-411b-8004-882a7c9b5e85
+		summarizeBy: none
+		sourceColumn: Column6
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Total Channels' = COUNTROWS('channels')
+		formatString: "#,##0"
+
+	measure 'Unique Creators' = DISTINCTCOUNT('channels'[Column6])
+		formatString: "#,##0"
+
+	measure 'Unique Keywords Topics' = DISTINCTCOUNT('channels'[Column3])
+		formatString: "#,##0"
+
+	measure 'Music Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "music") || CONTAINSSTRING('channels'[Column3], "música") || CONTAINSSTRING('channels'[Column3], "müzik") || CONTAINSSTRING('channels'[Column3], "музыка") || CONTAINSSTRING('channels'[Column3], "musique") || CONTAINSSTRING('channels'[Column3], "musik") || CONTAINSSTRING('channels'[Column3], "음악") || CONTAINSSTRING('channels'[Column3], "音楽") || CONTAINSSTRING('channels'[Column3], "音乐") || CONTAINSSTRING('channels'[Column3], "موسيقى"))
+		formatString: "#,##0"
+
+	measure 'Beauty Fashion Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "makeup") || CONTAINSSTRING('channels'[Column3], "beauty") || CONTAINSSTRING('channels'[Column3], "belleza") || CONTAINSSTRING('channels'[Column3], "maquillaje") || CONTAINSSTRING('channels'[Column3], "güzellik") || CONTAINSSTRING('channels'[Column3], "makyaj") || CONTAINSSTRING('channels'[Column3], "красота") || CONTAINSSTRING('channels'[Column3], "beauté") || CONTAINSSTRING('channels'[Column3], "schönheit") || CONTAINSSTRING('channels'[Column3], "뷰티") || CONTAINSSTRING('channels'[Column3], "美容") || CONTAINSSTRING('channels'[Column3], "美妆") || CONTAINSSTRING('channels'[Column3], "جمال") || CONTAINSSTRING('channels'[Column3], "مكياج"))
+		formatString: "#,##0"
+
+	measure 'Gaming Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "game") || CONTAINSSTRING('channels'[Column3], "gaming") || CONTAINSSTRING('channels'[Column3], "juego") || CONTAINSSTRING('channels'[Column3], "juegos") || CONTAINSSTRING('channels'[Column3], "oyun") || CONTAINSSTRING('channels'[Column3], "игры") || CONTAINSSTRING('channels'[Column3], "jeux") || CONTAINSSTRING('channels'[Column3], "spiele") || CONTAINSSTRING('channels'[Column3], "게임") || CONTAINSSTRING('channels'[Column3], "ゲーム") || CONTAINSSTRING('channels'[Column3], "游戏") || CONTAINSSTRING('channels'[Column3], "ألعاب"))
+		formatString: "#,##0"
+
+	measure 'Tech Science Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "tech") || CONTAINSSTRING('channels'[Column3], "technology") || CONTAINSSTRING('channels'[Column3], "tecnolog") || CONTAINSSTRING('channels'[Column3], "teknoloji") || CONTAINSSTRING('channels'[Column3], "технолог") || CONTAINSSTRING('channels'[Column3], "technolog") || CONTAINSSTRING('channels'[Column3], "technik") || CONTAINSSTRING('channels'[Column3], "기술") || CONTAINSSTRING('channels'[Column3], "テクノロジー") || CONTAINSSTRING('channels'[Column3], "科技") || CONTAINSSTRING('channels'[Column3], "تكنولوجيا") || CONTAINSSTRING('channels'[Column3], "program") || CONTAINSSTRING('channels'[Column3], "programa") || CONTAINSSTRING('channels'[Column3], "programlama") || CONTAINSSTRING('channels'[Column3], "программ") || CONTAINSSTRING('channels'[Column3], "programmation") || CONTAINSSTRING('channels'[Column3], "programmier") || CONTAINSSTRING('channels'[Column3], "프로그래밍") || CONTAINSSTRING('channels'[Column3], "プログラミング") || CONTAINSSTRING('channels'[Column3], "编程") || CONTAINSSTRING('channels'[Column3], "برمجة"))
+		formatString: "#,##0"
+
+	measure 'News Politics Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "news") || CONTAINSSTRING('channels'[Column3], "noticia") || CONTAINSSTRING('channels'[Column3], "haber") || CONTAINSSTRING('channels'[Column3], "noticias") || CONTAINSSTRING('channels'[Column3], "новини") || CONTAINSSTRING('channels'[Column3], "nouvelles") || CONTAINSSTRING('channels'[Column3], "nachrichten") || CONTAINSSTRING('channels'[Column3], "뉴스") || CONTAINSSTRING('channels'[Column3], "ニュース") || CONTAINSSTRING('channels'[Column3], "新闻") || CONTAINSSTRING('channels'[Column3], "أخبار") || CONTAINSSTRING('channels'[Column3], "politic") || CONTAINSSTRING('channels'[Column3], "polític") || CONTAINSSTRING('channels'[Column3], "siyaset") || CONTAINSSTRING('channels'[Column3], "политик") || CONTAINSSTRING('channels'[Column3], "politique") || CONTAINSSTRING('channels'[Column3], "politik") || CONTAINSSTRING('channels'[Column3], "정치") || CONTAINSSTRING('channels'[Column3], "政治") || CONTAINSSTRING('channels'[Column3], "سياسة"))
+		formatString: "#,##0"
+
+	measure 'Entertainment Vlog Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "vlog") || CONTAINSSTRING('channels'[Column3], "vlogger") || CONTAINSSTRING('channels'[Column3], "влог") || CONTAINSSTRING('channels'[Column3], "vlogueur") || CONTAINSSTRING('channels'[Column3], "브이로그") || CONTAINSSTRING('channels'[Column3], "日常") || CONTAINSSTRING('channels'[Column3], "entertain") || CONTAINSSTRING('channels'[Column3], "entreten") || CONTAINSSTRING('channels'[Column3], "eğlence") || CONTAINSSTRING('channels'[Column3], "развлеч") || CONTAINSSTRING('channels'[Column3], "divertissement") || CONTAINSSTRING('channels'[Column3], "unterhaltung") || CONTAINSSTRING('channels'[Column3], "엔터테인먼트") || CONTAINSSTRING('channels'[Column3], "エンタメ") || CONTAINSSTRING('channels'[Column3], "娱乐") || CONTAINSSTRING('channels'[Column3], "ترفيه") || CONTAINSSTRING('channels'[Column3], "funny") || CONTAINSSTRING('channels'[Column3], "comedy") || CONTAINSSTRING('channels'[Column3], "komik") || CONTAINSSTRING('channels'[Column3], "юмор") || CONTAINSSTRING('channels'[Column3], "humour") || CONTAINSSTRING('channels'[Column3], "komödie") || CONTAINSSTRING('channels'[Column3], "웃긴") || CONTAINSSTRING('channels'[Column3], "面白い") || CONTAINSSTRING('channels'[Column3], "搞笑") || CONTAINSSTRING('channels'[Column3], "كوميديا"))
+		formatString: "#,##0"
+
+	measure 'English Global Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "english") || CONTAINSSTRING('channels'[Column3], "inglés") || CONTAINSSTRING('channels'[Column3], "ingilizce") || CONTAINSSTRING('channels'[Column3], "английский") || CONTAINSSTRING('channels'[Column3], "anglais") || CONTAINSSTRING('channels'[Column3], "englisch") || CONTAINSSTRING('channels'[Column3], "영어") || CONTAINSSTRING('channels'[Column3], "英語") || CONTAINSSTRING('channels'[Column3], "英语") || CONTAINSSTRING('channels'[Column3], "الإنجليزية"))
+		formatString: "#,##0"
+
+	measure 'Turkish Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "türkçe") || CONTAINSSTRING('channels'[Column3], "türkiye") || CONTAINSSTRING('channels'[Column3], "turkey") || CONTAINSSTRING('channels'[Column3], "turkish"))
+		formatString: "#,##0"
+
+	measure 'German Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "german") || CONTAINSSTRING('channels'[Column3], "deutsch") || CONTAINSSTRING('channels'[Column3], "germany") || CONTAINSSTRING('channels'[Column3], "alemán") || CONTAINSSTRING('channels'[Column3], "allemagne") || CONTAINSSTRING('channels'[Column3], "독일"))
+		formatString: "#,##0"
+
+	measure 'French Spanish Channels' = CALCULATE(COUNTROWS('channels'), CONTAINSSTRING('channels'[Column3], "french") || CONTAINSSTRING('channels'[Column3], "français") || CONTAINSSTRING('channels'[Column3], "spain") || CONTAINSSTRING('channels'[Column3], "spanish") || CONTAINSSTRING('channels'[Column3], "español") || CONTAINSSTRING('channels'[Column3], "españa") || CONTAINSSTRING('channels'[Column3], "francés") || CONTAINSSTRING('channels'[Column3], "francia"))
+		formatString: "#,##0"
+
+	measure 'Music Pct' = DIVIDE([Music Channels], [Total Channels])
+		formatString: "0.00%"
+
+	measure 'Beauty Fashion Pct' = DIVIDE([Beauty Fashion Channels], [Total Channels])
+		formatString: "0.00%"
+
+	measure 'Gaming Pct' = DIVIDE([Gaming Channels], [Total Channels])
+		formatString: "0.00%"
+
+	measure 'Tech Science Pct' = DIVIDE([Tech Science Channels], [Total Channels])
+		formatString: "0.00%"
+
+	measure 'News Politics Pct' = DIVIDE([News Politics Channels], [Total Channels])
+		formatString: "0.00%"
+
+	partition channels = m
+		mode: import
+		source =
+				let
+				  Origen = Csv.Document(File.Contents("C:\\Users\\Sebas\\Downloads\\channels.csv"), [Delimiter = ",", Columns = 6, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+				  #"Tipo de columna cambiado" = Table.TransformColumnTypes(Origen, {{"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}, {"Column6", type text}}, "es")
+				in
+				  #"Tipo de columna cambiado"
+
+	annotation PBI_ResultType = Table
