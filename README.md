@@ -55,20 +55,26 @@ desktop-ssas-mcp/
 ├── requirements.txt       # Python dependencies
 ├── framework/             # 🆕 Power BI Orchestrator framework
 │   ├── SKILL.md           # Master orchestrator skill
+│   ├── DESIGN_GUIDELINES.md # Visual aesthetic rules & guidelines
 │   ├── references/
 │   │   └── guardrails.md  # 6 absolute non-negotiable rules
 │   └── scripts/
-│       ├── validate_pbip.py  # 11-structural-check validator
+│       ├── validate_pbip.py  # 11-structural-check validator (54 checks)
 │       ├── fix_tmdl.py       # CRLF→LF, formatString, BOM fixer
-│       ├── apply_theme.py    # 5 premium themes + custom
-│       └── check_overlaps.py # Visual overlap & layout checker
+│       ├── apply_theme.py    # 5 premium themes + custom (Dark/Light mode)
+│       ├── check_overlaps.py # Visual overlap, boundary & page capacity checker
+│       ├── audit_csv.py      # Pre-flight CSV auditor (BOM, quotes, delimiters)
+│       └── csv_fix.py         # Programmatic CSV cleaner
 ├── .agents/
-│   └── skills/            # AI agent skills (Hermes, Claude, Cursor)
-│       ├── powerbi-orchestrator/       # Master entry point
-│       ├── powerbi-tmdl-modeling/      # DAX + TMDL rules
-│       ├── powerbi-design-layout-themes/ # WCAG, grid, themes
-│       ├── powerbi-pbir-visuals-specs/  # Visual types, projections
-│       └── powerbi-pbir-troubleshooting/ # Traps & fixes
+│   └── skills/            # AI agent skills (Hermes, Anti-Gravity, Claude Code, Cursor)
+│       ├── powerbi-orchestrator/       # Master entry point (loads sub-skills auto)
+│       ├── powerbi-tmdl-modeling/      # DAX measures + TMDL formatting rules
+│       ├── powerbi-design-layout-themes/ # 1280x720 Grid math, WCAG contrast, 5 themes
+│       ├── powerbi-pbir-visuals-specs/  # Visual types, queryState schemas, 2.9.0 lock
+│       ├── powerbi-pbir-troubleshooting/ # 5 Anti-Gravity Pillars & trap fixes
+│       ├── powerbi-visual-styling/      # Per-visual-type text & background rules
+│       ├── powerbi-csv-audit/           # Standalone CSV audit rules
+│       └── pbir-dark-theme-styling/     # Dark theme JSON templates
 ```
 
 ---
@@ -79,26 +85,41 @@ The **Power BI Orchestrator** is a complete, model-agnostic framework for agent-
 
 ### 8-Phase Workflow
 
-| Phase | What Happens | Validation |
-|-------|-------------|------------|
-| 0 | **Interactive Discovery** — Ask user about purpose, audience, data source | — |
+| Phase | What Happens | Validation Script |
+|-------|-------------|-------------------|
+| 0 | **Interactive Discovery** — Ask user about purpose, audience, data source | `audit_csv.py` (if CSV/Excel) |
 | 1 | **Environment Check** — Verify MCP, skills, scripts, PBID status | `validate_pbip.py` |
 | 2 | **Data Import** — User imports CSV/Excel in PBID, saves as PBIP | — |
-| 3 | **Model Analysis** — Agent reads schema, suggests measures | — |
+| 3 | **Model Analysis** — Agent reads schema, suggests measures | `get_schema()` via MCP |
 | 4 | **Measure Injection** — Write DAX to TMDL, fix formatting | `fix_tmdl.py` |
 | 5 | **Theme Selection** — Apply one of 5 premium themes | `apply_theme.py` |
 | 6 | **Visual Creation** — Prompt user for chart types, create via `pbir add visual` | `check_overlaps.py` |
-| 7 | **Final Verification** — Full validation + cache cleanup | `validate_pbip.py` + `fix_tmdl.py` |
+| 7 | **Final Verification** — Full validation + cache cleanup | `validate_pbip.py` + `check_overlaps.py` |
 | 8 | **Human Review** — User opens PBID, confirms rendering | — |
 
-### 6 Absolute Guardrails
+### 🛑 6 Absolute Guardrails
 
-1. **NEVER** create model.bim/TMDL from scratch — user must load data first
-2. **ALWAYS** close PBID before editing files (`taskkill /IM PBIDesktop.exe /F`)
-3. **NEVER** create visual.json manually — use `pbir add visual`
-4. **TMDL requires LF** (`\\n`), NOT CRLF (`\\r\\n`)
-5. **Delete** `cache.abf` before reopening PBID
-6. **NEVER** use `%` in DAX measure names — use `Pct` instead
+1. **NEVER** create `model.bim` / TMDL from scratch — user must load data in Power BI Desktop first.
+2. **ALWAYS** close Power BI Desktop before editing files (`taskkill /IM PBIDesktop.exe /F`).
+3. **NEVER** create `visual.json` manually — always use `pbir add visual <type>`.
+4. **TMDL requires LF** (`\n`), NOT CRLF (`\r\n`). Always write TMDL in Python with `newline='\n'`.
+5. **Delete** `<Project>.SemanticModel/.pbi/cache.abf` before reopening Power BI Desktop.
+6. **NEVER** use `%` in DAX measure names — use `Pct` instead (`Avg Discount Pct`).
+
+### ⚡ 5 Anti-Gravity Pillars (Deterministic Styling)
+
+1. **Custom Visual Binding:** Duplicate projections in `queryState` under both `"Values"` and manifest role (`"content"` for HTML Content).
+2. **Canvas Background:** Set canvas background in `page.json` `objects.background` (never use `show` property in `page.json` background!).
+3. **Strict Color Key Mapping:**
+   - `card` KPI: `"labels"` → `"color"`, `"categoryLabels"` → `"show": false`
+   - `donutChart`: `"labels"` → `"color"`, `"legend"` → `"labelColor"`
+   - `barChart`/`columnChart`: `"dataPoint"` → `"fill"`, `"dataLabels"` → `"labelColor"`, `"categoryAxis"`/`valueAxis` → `"labelColor"`
+   - `slicer`: `"items"` → `"fontColor"`, `"header"` → `"show": false`
+4. **Multi-Color Bars:** Array of `scopeId` Comparison selectors in `dataPoint` — `Right` = `Literal` direct without outer `expr`.
+5. **1280x720 Grid & Capacity Limits:**
+   - Canvas 1280x720 (margins 20px, gaps ≥ 20px).
+   - Max **5 to 6 visuals per page**.
+   - Max **5 KPIs per row** (`w=232px`, `gap=20px`, `margin=20px`). Formula: `x_i = 20 + i * 252`.
 
 ### Quick Start (for any AI agent)
 
